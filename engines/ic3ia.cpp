@@ -49,7 +49,11 @@ IC3IA::IC3IA(const Property & p,
       ia_(conc_ts_, ts_, unroller_),
       // only mathsat interpolator supported
       interpolator_(create_interpolating_solver_for(
-          SolverEnum::MSAT_INTERPOLATOR, Engine::IC3IA_ENGINE)),
+      SolverEnum::MSAT_INTERPOLATOR, Engine::IC3IA_ENGINE)),
+      // interpolator_(create_interpolating_solver_for(
+      //     s->get_solver_enum(), Engine::IC3IA_ENGINE)),
+      // interpolator_(create_interpolating_solver_for(
+      //     SolverEnum::MSAT_INTERPOLATOR, Engine::IC3IA_ENGINE)),
       to_interpolator_(interpolator_),
       to_solver_(solver_),
       longest_cex_length_(0)
@@ -59,6 +63,8 @@ IC3IA::IC3IA(const Property & p,
   orig_ts_ = ts;
   engine_ = Engine::IC3IA_ENGINE;
   approx_pregen_ = true;
+  std::cout << "Solver: " << s->get_solver_enum() << " Interpolator: "
+    << this->interpolator_->get_solver_enum() << "\n";
 }
 
 void IC3IA::add_important_var(Term v)
@@ -173,9 +179,11 @@ void IC3IA::initialize()
   // NOTE need to use get_free_symbols NOT get_free_symbolic_consts
   // because the latter ignores uninterpreted functions
   UnorderedTermSet free_symbols;
+  std::cout << "free symbols init\n";
   get_free_symbols(ts_.init(), free_symbols);
+  std::cout << "free symbols trans\n";
   get_free_symbols(ts_.trans(), free_symbols);
-  get_free_symbols(bad_, free_symbols);
+  get_free_symbols(bad_, free_symbols); // RTC
 
   for (auto const&s : free_symbols) {
     assert(s->is_symbol());
@@ -251,15 +259,18 @@ RefineResult IC3IA::refine()
     if (i + 1 < cex_length) {
       t = solver_->make_term(And, t, unroller_.at_time(conc_ts_.trans(), i));
     }
+    std::cout << "Transferring " << t->to_string() << "\n";
     formulae.push_back(to_interpolator_.transfer_term(t, BOOL));
   }
-
+  logger.log(3, "Getting seq interpolant");
+  // std::cout << interpolator_->get_solver_enum() << "\n";
   TermVec out_interpolants;
   Result r =
       interpolator_->get_sequence_interpolants(formulae, out_interpolants);
 
   if (r.is_sat()) {
     // this is a real counterexample, so the property is false
+    logger.log(3, "Confirmed trace\n");
     return RefineResult::REFINE_NONE;
   }
 
@@ -269,9 +280,12 @@ RefineResult IC3IA::refine()
   // have already been cached in to_solver_
   longest_cex_length_ = cex_length;
 
+  // logger.log(3, "Seq interpolant size: ");
+  std::cout << "Interp size : " <<  + out_interpolants.size() << "\n";
   UnorderedTermSet preds;
   for (auto const&I : out_interpolants) {
     if (!I) {
+      std::cout << "null\n";
       assert(
           r.is_unknown());  // should only have null terms if got unknown result
       continue;

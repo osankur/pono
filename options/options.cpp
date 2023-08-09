@@ -782,10 +782,10 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
       }
     }
 
-    if (smt_solver_ != smt::MSAT && engine_ == Engine::INTERP) {
-      throw PonoException(
-          "Interpolation engine can be only used with '--smt-solver msat'.");
-    }
+    // if (smt_solver_ != smt::MSAT && engine_ == Engine::INTERP) {
+    //   throw PonoException(
+    //       "Interpolation engine can be only used with '--smt-solver msat'.");
+    // }
 
     if (ceg_prophecy_arrays_ && smt_solver_ != smt::MSAT) {
       throw PonoException(

@@ -61,9 +61,9 @@ void Prover::initialize()
 
   reached_k_ = -1;
 
-  if (!ts_.only_curr(bad_)) {
-    throw PonoException("Property should not contain inputs or next state variables");
-  }
+  // if (!ts_.only_curr(bad_)) {
+  //   throw PonoException("Property should not contain inputs or next state variables");
+  // }
 
   initialized_ = true;
 }

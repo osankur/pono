@@ -74,7 +74,7 @@ if [ ! -d "$DEPS/smt-switch" ]; then
     make install
     cd $DIR
 else
-    echo "$DEPS/smt-switch already exists. If you want to rebuild, please remove it manually."
+   echo "$DEPS/smt-switch already exists. If you want to rebuild, please remove it manually."
 fi
 
 if [ 0 -lt $(ls $DEPS/smt-switch/local/lib/libsmt-switch* 2>/dev/null | wc -w) ]; then

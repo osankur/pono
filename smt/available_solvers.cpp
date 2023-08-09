@@ -14,8 +14,10 @@
 **
 **/
 
+
 #include "smt/available_solvers.h"
 
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -85,7 +87,7 @@ SmtSolver create_solver_base(SolverEnum se, bool logging)
     }
 #endif
     default: {
-      throw SmtException("Unhandled solver enum");
+      throw SmtException("Unhandled solver enum 1");
     }
   }
 
@@ -185,6 +187,9 @@ SmtSolver create_reducer_for(SolverEnum se, Engine e, bool logging)
 SmtSolver create_interpolating_solver(SolverEnum se)
 {
   switch (se) {
+    case CVC5_INTERPOLATOR:
+    case CVC5:
+      return Cvc5SolverFactory::create_interpolating_solver();
 #if WITH_MSAT
     // for convenience -- accept any MSAT SolverEnum
     case MSAT:
@@ -195,7 +200,7 @@ SmtSolver create_interpolating_solver(SolverEnum se)
     }
 #endif
     default: {
-      throw SmtException("Unhandled solver enum");
+      throw SmtException("Unhandled solver enum 2");
     }
   }
 }
@@ -207,6 +212,9 @@ SmtSolver create_interpolating_solver_for(SolverEnum se, Engine e)
   }
 
   switch (se) {
+    case CVC5_INTERPOLATOR:
+    case CVC5:
+      return Cvc5SolverFactory::create_interpolating_solver();
 #if WITH_MSAT
       // for convenience -- accept any MSAT SolverEnum
     case MSAT:
@@ -224,7 +232,11 @@ SmtSolver create_interpolating_solver_for(SolverEnum se, Engine e)
     }
 #endif
     default: {
-      throw SmtException("Unhandled solver enum");
+      std::stringstream ss;
+      ss << "Unhandled solver enum 3 ";
+      ss << se;
+
+      throw SmtException(ss.str());
     }
   }
 }

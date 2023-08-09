@@ -132,6 +132,7 @@ ProverResult check_prop(PonoOptions pono_options,
   } else {
     prover = make_prover(eng, p, ts, s, pono_options);
   }
+
   assert(prover);
 
   // TODO: handle this in a more elegant way in the future
