@@ -150,6 +150,7 @@ set(SOURCES
   "${PROJECT_SOURCE_DIR}/engines/ic3base.cpp"
   "${PROJECT_SOURCE_DIR}/engines/ic3bits.cpp"
   "${PROJECT_SOURCE_DIR}/engines/ic3ia.cpp"
+  "${PROJECT_SOURCE_DIR}/engines/ic3iartc.cpp"
   "${PROJECT_SOURCE_DIR}/engines/ic3sa.cpp"
   "${PROJECT_SOURCE_DIR}/engines/interpolantmc.cpp"
   "${PROJECT_SOURCE_DIR}/engines/kinduction.cpp"
@@ -295,6 +296,22 @@ target_link_libraries(pono-bin PUBLIC pono-lib)
 if ("${PONO_STATIC_EXEC}" STREQUAL "YES")
   target_link_libraries(pono-bin PUBLIC -static)
 endif()
+
+# add_executable(test_quant "${PROJECT_SOURCE_DIR}/tests/test_quant.cpp")
+# target_include_directories(test_quant PUBLIC
+#   "${PROJECT_SOURCE_DIR}/utils"
+#   "${PROJECT_SOURCE_DIR}/core"
+#   "${PROJECT_SOURCE_DIR}/contrib/"
+#   "${PROJECT_SOURCE_DIR}/contrib/optionparser-1.7/src"
+#   "${PROJECT_SOURCE_DIR}/deps/btor2tools/src"
+#   "${SMT_SWITCH_DIR}/local/include")
+
+# target_link_libraries(test_quant PUBLIC pono-lib)
+
+# if ("${PONO_STATIC_EXEC}" STREQUAL "YES")
+#   target_link_libraries(test_quant PUBLIC -static)
+# endif()
+
 
 # install smt-switch
 install(TARGETS pono-lib DESTINATION lib)

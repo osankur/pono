@@ -90,7 +90,8 @@ enum optionIndex
   KIND_NO_IND_CHECK,
   KIND_NO_IND_CHECK_PROPERTY,
   KIND_ONE_TIME_BASE_CHECK,
-  KIND_BOUND_STEP
+  KIND_BOUND_STEP,
+  RT_CONSISTENCY
 };
 
 struct Arg : public option::Arg
@@ -586,6 +587,14 @@ const option::Descriptor usage[] = {
     "  --kind-bound-step \tAmount by which bound (unrolling depth) "
     "is increased in k-induction (default: 1)"
     },
+  { RT_CONSISTENCY,
+    0,
+    "",
+    "rt-consistency",
+    Arg::None,
+    "  --rt-consistency \tcheck rt-consistency "
+    },
+
   { 0, 0, 0, 0, 0, 0 }
 };
 /*********************************** end Option Handling setup
@@ -775,6 +784,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
 	  if (kind_bound_step_ == 0)
 	    throw PonoException("--kind-bound-step must be greater than 0");
 	  break;
+        case RT_CONSISTENCY: rtconsistency_ = true; break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL
           // which aborts the parse with an error
@@ -782,10 +792,10 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
       }
     }
 
-    // if (smt_solver_ != smt::MSAT && engine_ == Engine::INTERP) {
-    //   throw PonoException(
-    //       "Interpolation engine can be only used with '--smt-solver msat'.");
-    // }
+    if (smt_solver_ != smt::MSAT && engine_ == Engine::INTERP) {
+      throw PonoException(
+          "Interpolation engine can be only used with '--smt-solver msat'.");
+    }
 
     if (ceg_prophecy_arrays_ && smt_solver_ != smt::MSAT) {
       throw PonoException(
@@ -864,6 +874,10 @@ string to_string(Engine e)
     }
     case SYGUS_PDR: {
       res = "sygus-pdr";
+      break;
+    }
+    case IC3IARTC_ENGINE:{
+      res = "ic3ia-rtc";
       break;
     }
     default: {

@@ -12,9 +12,12 @@ endif()
 # in the future, we can switch to FindPython3 once it has become more standard
 # i.e. when the following issue is resolved:
 # https://github.com/scikit-build/scikit-build/issues/506
-find_package(PythonInterp 3.5 REQUIRED)
+#find_package(PythonInterp 3.5 REQUIRED)
+find_package(PythonInterp 3.10 REQUIRED)
 if (PYTHONINTERP_FOUND)
-  find_package(PythonLibs "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}" REQUIRED)
+  # message("${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
+  #find_package(PythonLibs "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}" REQUIRED)
+  find_package(PythonLibs 3.10 REQUIRED)
 endif()
 
 # WITH_COREIR is a macro in the Cython files

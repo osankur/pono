@@ -235,7 +235,11 @@ SmtSolver create_interpolating_solver_for(SolverEnum se, Engine e)
       std::stringstream ss;
       ss << "Unhandled solver enum 3 ";
       ss << se;
-
+#if WITH_MSAT
+      ss << " (WITH_MSAT=1)\n";
+#else 
+      ss << " (WITH_MSAT=0)\n";
+#endif
       throw SmtException(ss.str());
     }
   }

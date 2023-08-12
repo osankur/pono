@@ -23,6 +23,7 @@
 #include "engines/cegar_values.h"
 #include "engines/ic3bits.h"
 #include "engines/ic3ia.h"
+#include "engines/ic3iartc.h"
 #include "engines/ic3sa.h"
 #include "engines/interpolantmc.h"
 #include "engines/kinduction.h"
@@ -45,6 +46,7 @@ vector<Engine> all_engines()
            #ifdef WITH_MSAT
            INTERP,
            IC3IA_ENGINE,
+           IC3IARTC_ENGINE,
            #endif
            IC3SA_ENGINE
   };
@@ -88,7 +90,9 @@ shared_ptr<Prover> make_prover(Engine e,
     return make_shared<IC3SA>(p, ts, slv, opts);
   } else if (e == SYGUS_PDR) {
     return make_shared<SygusPdr>(p, ts, slv, opts);
-  } else {
+  } else if ( e == IC3IARTC_ENGINE){
+    return make_shared<IC3IARTC>(p, ts, slv, opts);
+  }else {
     throw PonoException("Unhandled engine");
   }
 }

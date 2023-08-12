@@ -94,6 +94,7 @@ class IC3IA : public IC3
   // pure virtual method implementations
 
   IC3Formula get_model_ic3formula() const override;
+  smt::Term get_nextstate_model() const ;
 
   bool ic3formula_check_valid(const IC3Formula & u) const override;
 

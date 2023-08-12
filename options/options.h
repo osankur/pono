@@ -39,7 +39,8 @@ enum Engine
   IC3IA_ENGINE,
   MSAT_IC3IA,
   IC3SA_ENGINE,
-  SYGUS_PDR
+  SYGUS_PDR,
+  IC3IARTC_ENGINE
   // NOTE: if adding an IC3 variant,
   // make sure to update ic3_variants_set in options/options.cpp
   // used for setting solver options appropriately
@@ -65,7 +66,8 @@ const std::unordered_map<std::string, Engine> str2engine(
       { "ic3ia", IC3IA_ENGINE },
       { "msat-ic3ia", MSAT_IC3IA },
       { "ic3sa", IC3SA_ENGINE },
-      { "sygus-pdr", SYGUS_PDR } });
+      { "sygus-pdr", SYGUS_PDR },
+      { "ic3ia-rtc", IC3IARTC_ENGINE } });
 
 // SyGuS mode option
 enum SyGuSTermMode{
@@ -149,7 +151,8 @@ class PonoOptions
         kind_no_ind_check_(default_kind_no_ind_check_),
         kind_no_ind_check_property_(default_kind_no_ind_check_property_),
         kind_one_time_base_check_(default_kind_one_time_base_check_),
-        kind_bound_step_(default_kind_bound_step_)
+        kind_bound_step_(default_kind_bound_step_),
+        rtconsistency_(false)
   {
   }
 
@@ -190,6 +193,7 @@ class PonoOptions
   bool static_coi_;
   bool show_invar_;   ///< display invariant when running from command line
   bool check_invar_;  ///< check invariants (if available) when run through CLI
+  bool rtconsistency_;
   // ic3 options
   bool ic3_pregen_;  ///< generalize counterexamples in IC3
   bool ic3_indgen_;  ///< inductive generalization in IC3

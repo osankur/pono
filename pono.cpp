@@ -44,10 +44,76 @@
 #include "utils/timestamp.h"
 #include "utils/make_provers.h"
 #include "utils/ts_analysis.h"
+#include "engines/ic3ia.h"
+#include "engines/ic3iartc.h"
 
 using namespace pono;
 using namespace smt;
 using namespace std;
+
+class QuantifierTests 
+{
+ public:
+  QuantifierTests()
+  {
+    pono::set_global_logger_verbosity(10);
+    // s = create_solver_for(GetParam(), IC3IA_ENGINE, false);
+    s = create_solver(smt::SolverEnum::CVC5);
+    s->set_opt("produce-unsat-assumptions", "true");
+    boolsort = s->make_sort(BOOL);
+    bvsort8 = s->make_sort(BV, 8);
+    intsort = s->make_sort(INT);
+  }
+  void check()
+  {
+    RelationalTransitionSystem rts(s);
+    Term x = rts.make_statevar("x", intsort);
+    Term y = rts.make_statevar("y", intsort);
+
+    rts.constrain_init(rts.make_term(Equal, x, rts.make_term(0, intsort)));
+    rts.constrain_init(rts.make_term(Equal, y, rts.make_term(0, intsort)));
+
+    // x' > x
+    rts.constrain_trans(rts.make_term(Gt, rts.next(x), x));
+    // y' = y + (x' - x)
+    rts.constrain_trans(rts.make_term(
+        Equal,
+        rts.next(y),
+        rts.make_term(Plus, y, rts.make_term(Minus, rts.next(x), x))));
+
+    
+    Term wit = rts.make_statevar("propwit", boolsort);
+    rts.constrain_init(wit);
+    rts.assign_next(wit, rts.make_term(Equal, x, y));
+
+    Term a = rts.solver()->make_param("a", boolsort);
+    Term qprop = rts.make_term(smt::Forall, a, wit);
+    // Property p(rts.solver(), qprop);
+    // Property p(rts.solver(), rts.make_term(Not, wit));
+    Property p(rts.solver(), wit);
+
+    PonoOptions po;
+    // po.rtconsistency_= true;
+    IC3IARTC ic3ia(p, rts, s, po );
+    ProverResult r = ic3ia.prove();
+    std::cout << "Result: " << r << "\n";
+
+    std::vector<UnorderedTermMap> cex;
+    ic3ia.witness(cex);
+    for (auto state : cex){
+      for ( auto t : state){
+        std::cout << t.first << " = " << t.second << ", ";
+      }
+      std::cout << "\n";
+    }
+
+    Term invar = ic3ia.invar();
+    assert(check_invar(rts, p.prop(), invar));
+    }  
+  SmtSolver s;
+  Sort boolsort, bvsort8, intsort;
+};
+
 
 ProverResult check_prop(PonoOptions pono_options,
                         Term & prop,
@@ -248,6 +314,11 @@ int main(int argc, char ** argv)
     // HACK bool_model_generation for IC3IA breaks CegProphecyArrays
     // longer term fix will use a different solver in CegProphecyArrays,
     // but for now just force full model generation in that case
+    if (pono_options.rtconsistency_){
+      QuantifierTests qt;
+      qt.check();
+      return 0;
+    }
 
     SmtSolver s = create_solver_for(pono_options.smt_solver_,
                                     pono_options.engine_,

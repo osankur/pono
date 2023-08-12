@@ -101,6 +101,24 @@ IC3Formula IC3IA::get_model_ic3formula() const
   return ic3formula_conjunction(conjuncts);
 }
 
+Term IC3IA::get_nextstate_model() const
+{
+  TermVec conjuncts;
+  conjuncts.reserve(predlbls_.size());
+  Term val;
+  for (const auto & p : predlbls_) {    
+    if ((val = solver_->get_value(ts_.next(p))) == solver_true_) {
+      conjuncts.push_back(lbl2pred_.at(p));
+    } else {
+      conjuncts.push_back(solver_->make_term(Not, lbl2pred_.at(p)));
+    }
+    assert(val->is_value());
+  }
+
+  return make_and(conjuncts, this->solver_);
+}
+
+
 bool IC3IA::ic3formula_check_valid(const IC3Formula & u) const
 {
   // check that children are literals
@@ -149,10 +167,12 @@ void IC3IA::initialize()
   // add all the predicates from init and property to the abstraction
   // NOTE: abstract is called automatically in IC3Base initialize
   UnorderedTermSet preds;
+  
   get_predicates(solver_, conc_ts_.init(), preds, false, false, true);
   size_t num_init_preds = preds.size();
+  size_t num_prop_preds = 0;
   get_predicates(solver_, bad_, preds, false, false, true);
-  size_t num_prop_preds = preds.size() - num_init_preds;
+  num_prop_preds = preds.size() - num_init_preds;
   for (const auto &p : preds) {
     add_predicate(p);
   }
@@ -237,9 +257,11 @@ void IC3IA::abstract()
 
 RefineResult IC3IA::refine()
 {
+  logger.log(1, "\nRefinemenent with {} steps", cex_.size());
   // counterexample trace should have been populated
   assert(cex_.size());
   if (cex_.size() == 1) {
+    std::cout << cex_.front()->to_string() << "\n";
     // if there are no transitions, then this is a concrete CEX
     return REFINE_NONE;
   }
@@ -385,7 +407,7 @@ void IC3IA::reabstract()
   UnorderedTermSet used_symbols;
   get_free_symbolic_consts(ts_.init(), used_symbols);
   get_free_symbolic_consts(ts_.trans(), used_symbols);
-  get_free_symbolic_consts(bad_, used_symbols);
+  // get_free_symbolic_consts(bad_, used_symbols);
 
   UnorderedTermSet preds;
   // reset init and trans -- done with calling ia_.do_abstraction

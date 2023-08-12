@@ -470,6 +470,7 @@ bool IC3Base::rel_ind_check(size_t i,
   assert(!c.disjunction);
 
   assert(solver_context_ == 0);
+  std::cout << "rel_ind_check for formula: "<< c.term->to_string() << "\n";
   push_solver_context();
 
   // F[i-1]
@@ -948,6 +949,7 @@ void IC3Base::reconstruct_trace(const ProofGoal * pg, TermVec & out)
   assert(pg->target.term);
   assert(check_intersects_initial(pg->target.term));
 
+  std::cout << "reconstruct_trace\n";
   out.clear();
   while (pg) {
     out.push_back(pg->target.term);
@@ -955,9 +957,7 @@ void IC3Base::reconstruct_trace(const ProofGoal * pg, TermVec & out)
     pg = pg->next;
   }
 
-  // always add bad as last state so it's a full trace
-  // NOTE this is because the reaches_bad implementation
-  out.push_back(bad_);
+    out.push_back(bad_);
 }
 
 Term IC3Base::make_and(TermVec vec, SmtSolver slv) const

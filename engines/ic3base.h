@@ -246,6 +246,10 @@ class IC3Base : public Prover
    */
   virtual IC3Formula get_model_ic3formula() const = 0;
 
+  // virtual smt::Term get_nextstate_model() const {
+  //   throw std::runtime_error("Unimplemented");
+  // }
+
   /** Check whether a given IC3Formula is valid
    *  e.g. if this is a boolean clause it would
    *    check that it's a disjunction of literals
@@ -529,7 +533,7 @@ class IC3Base : public Prover
    *  can reach bad in one step.
    *  thus this method always adds bad_ to the end of the vector
    */
-  void reconstruct_trace(const ProofGoal * pg, smt::TermVec & out);
+  virtual void reconstruct_trace(const ProofGoal * pg, smt::TermVec & out);
 
   /** Creates a reduce and of the vector of boolean terms
    *  It also sorts the vector by the hash
