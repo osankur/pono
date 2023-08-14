@@ -46,6 +46,7 @@
 #include "utils/ts_analysis.h"
 #include "engines/ic3ia.h"
 #include "engines/ic3iartc.h"
+#include "modifiers/rtconsistency.h"
 
 using namespace pono;
 using namespace smt;
@@ -479,7 +480,6 @@ int main(int argc, char ** argv)
     ProfilerStop();
 #endif
   }
-
   if (pono_options.print_wall_time_) {
     auto end_time_stamp = timestamp();
     auto elapsed_time = timestamp_diff(begin_time_stamp, end_time_stamp);

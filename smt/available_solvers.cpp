@@ -118,11 +118,13 @@ SmtSolver create_solver_for(SolverEnum se,
     // IC3SA requires a full model
     full_model = true;
   }
-
+  if (e == IC3IARTC_ENGINE) {
+    se = CVC5;
+  }
   if (se != MSAT) {
     // no special options yet for solvers other than mathsat
     s = create_solver(se, logging);
-  }
+  } 
 #ifdef WITH_MSAT
   else if (se == MSAT && ic3_engine) {
     // These will be managed by the solver object
