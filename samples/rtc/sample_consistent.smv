@@ -1,0 +1,27 @@
+MODULE main
+IVAR
+i : boolean;
+VAR
+--inputs
+clk : boolean;
+
+--latches
+v : boolean;
+state : boolean;
+ASSIGN
+init(v) := FALSE;
+next(v) := !aa12;
+init(state) := FALSE;
+next(state) := aa14;
+DEFINE
+--ands
+aa10 := state & i;
+aa12 := !aa10 & !v;
+aa14 := !state & i;
+--outputs
+o := !v;
+--bad
+--constraints
+--justice
+--fairness
+INVARSPEC o;

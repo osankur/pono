@@ -25,8 +25,6 @@ IC3IARTC::IC3IARTC(const Property & p,
     : IC3IA(p, ts, s, opt)
 {
   assert(ts_.solver() == orig_property_.solver());
-  bad_ = getQuantifiedRTConsistencyBad();
-  cout << "RTC Bad property: " << bad_->to_string() <<'\n';
 }
 
 /**
@@ -42,7 +40,7 @@ void IC3IARTC::reconstruct_trace(const ProofGoal * pg, TermVec & out)
   assert(pg->target.term);
   assert(check_intersects_initial(pg->target.term));
 
-  std::cout << "IC3IARTC::reconstruct_trace\n";
+  logger.log(2, "IC3IARTC::reconstruct_trace\n");
   out.clear();
   while (pg) {
     out.push_back(pg->target.term);
@@ -53,14 +51,33 @@ void IC3IARTC::reconstruct_trace(const ProofGoal * pg, TermVec & out)
   push_solver_context();
   solver_->assert_formula(out.back());
   solver_->assert_formula(ts_.next(bad_));
-  solver_->assert_formula(trans_label_);
+  solver_->assert_formula(ts_.trans());
+  // std::cout << "Solving for:\n";
+  // std::cout << "\t" << out.back() << "\n";
+  // std::cout << "\t" << ts_.next(bad_) << "\n";
+  // std::cout << "\t" << ts_.trans() << "\n";
+
   Result r = check_sat();
   assert(r.is_sat());
 
   Term prebad = get_nextstate_model();
   out.push_back(prebad);
-  std::cout << "Prebad: " << prebad->to_string() << "\n";
+  // std::cout << "Model: " << prebad->to_string() << "\n";
   pop_solver_context();
+
+  // push_solver_context();
+  // solver_->assert_formula(prebad);
+  // solver_->assert_formula(bad_);
+  // std::cout << "\nprebad is indeed in bad_ = " << check_sat() << "\n";
+  // std::cout << "Solved for:\n";
+  // std::cout << "\t" << prebad << "\n";
+  // std::cout << "\t" << bad_ << "\n";
+  // pop_solver_context();
+
+  std::cout << "\nTRACE:\n";
+  for (auto t : out ){
+    std::cout << t->to_string() << "\n";
+  }
 }
 
 /**
@@ -102,6 +119,9 @@ void IC3IARTC::initialize()
   // modification
   super::super::initialize();
 
+  bad_ = getQuantifiedRTConsistencyBad();
+  cout << "RTC Bad property: " << bad_->to_string() <<'\n';
+
   // add all the predicates from init and property to the abstraction
   // NOTE: abstract is called automatically in IC3Base initialize
   UnorderedTermSet preds;
@@ -135,9 +155,7 @@ void IC3IARTC::initialize()
   // NOTE need to use get_free_symbols NOT get_free_symbolic_consts
   // because the latter ignores uninterpreted functions
   UnorderedTermSet free_symbols;
-  std::cout << "free symbols init\n";
   get_free_symbols(ts_.init(), free_symbols);
-  std::cout << "free symbols trans\n";
   get_free_symbols(ts_.trans(), free_symbols);
   get_free_symbols(bad_, free_symbols);  // RTC
 
@@ -164,17 +182,17 @@ void IC3IARTC::initialize()
 
 /**
  * Return the following quantified formula:
- * P(X) /\ ∀Y. T(X, Y) -> ~P(Y)
+ * P(X) /\ ∀ Y. ∀I. T(X, I, Y) -> ~P(Y)
  */
 Term IC3IARTC::getQuantifiedRTConsistencyBad() {
   // Map nextstatevar to param
   UnorderedTermMap subst;
-  for (const auto & sv : ts_.statevars()) {
-    cout << "State var: " << sv->to_string() << "\n";
-  }
-  for (const auto & sv : ts_.inputvars()) {
-    cout << "Input var: " << sv->to_string() << "\n";
-  }
+  // for (const auto & sv : ts_.statevars()) {
+  //   cout << "State var: " << sv->to_string() << "\n";
+  // }
+  // for (const auto & sv : ts_.inputvars()) {
+  //   cout << "Input var: " << sv->to_string() << "\n";
+  // }
 
   for (const auto & sv : ts_.statevars()) {
     const Sort & sort = sv->get_sort();
@@ -183,7 +201,17 @@ Term IC3IARTC::getQuantifiedRTConsistencyBad() {
     subst[ts_.next(sv)] = p;
     this->param2var_[p] = sv;
   }
+  for (const auto & sv : ts_.inputvars()) {
+    const Sort & sort = sv->get_sort();
+    Term p = solver_->make_param("#" + sv->to_string(), sort);
+    this->var2param_[sv] = p;
+    subst[sv] = p;
+    this->param2var_[p] = sv;
+  }
+
+  // std::cout << "trans: " << ts_.trans() << "\n";
   Term transXY = solver_->substitute(ts_.trans(), subst);
+  // std::cout << "transXY: " << transXY << "\n";
   Term badY = solver_->substitute(bad_, var2param_);
   Term rhs = solver_->make_term(Implies, transXY, badY);
   for (auto pv : param2var_) {

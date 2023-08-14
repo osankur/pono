@@ -46,7 +46,6 @@
 #include "utils/ts_analysis.h"
 #include "engines/ic3ia.h"
 #include "engines/ic3iartc.h"
-#include "modifiers/rtconsistency.h"
 
 using namespace pono;
 using namespace smt;
