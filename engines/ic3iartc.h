@@ -6,6 +6,11 @@
 
 namespace pono {
 
+/**
+ * This solver only accepts models with Boolean and real variables.
+ * Real variables are assumed to be timed automata clocks, and delay transitions
+ * are added.
+*/
 class IC3IARTC : public IC3IA
 {
  public:
@@ -27,6 +32,7 @@ class IC3IARTC : public IC3IA
   smt::UnorderedTermMap var2param_;
   // quantified param to state var
   smt::UnorderedTermMap param2var_;
+
 };
 
 }

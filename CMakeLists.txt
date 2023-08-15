@@ -135,6 +135,7 @@ set(INCLUDE_DIRS
 
 set(SOURCES
   "${PROJECT_SOURCE_DIR}/core/ts.cpp"
+  "${PROJECT_SOURCE_DIR}/core/tts.cpp"
   "${PROJECT_SOURCE_DIR}/core/rts.cpp"
   "${PROJECT_SOURCE_DIR}/core/fts.cpp"
   "${PROJECT_SOURCE_DIR}/core/unroller.cpp"

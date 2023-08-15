@@ -119,9 +119,10 @@ void IC3IARTC::initialize()
   // modification
   super::super::initialize();
 
+
   bad_ = getQuantifiedRTConsistencyBad();
   cout << "RTC Bad property: " << bad_->to_string() <<'\n';
-
+  
   // add all the predicates from init and property to the abstraction
   // NOTE: abstract is called automatically in IC3Base initialize
   UnorderedTermSet preds;
