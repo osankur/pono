@@ -58,6 +58,10 @@ void VMTEncoder::term_attribute(const Term & term,
     rts_.constrain_init(term);
   } else if (keyword == "trans") {
     rts_.constrain_trans(term);
+  } else if (keyword == "invar") {
+    rts_.constrain_init(term);
+    rts_.constrain_trans(term);
+    rts_.constrain_trans(rts_.next(term));
   } else if (keyword == "invar-property") {
     propvec_.push_back(term);
   } else {
