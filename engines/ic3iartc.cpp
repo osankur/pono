@@ -166,7 +166,7 @@ void IC3IARTC::initialize()
       continue;
     }
     cache[to_interpolator_.transfer_term(s)] = s;
-  }
+  } 
 
   // TODO fix generalize_predecessor for ic3ia
   //      might need to override it
