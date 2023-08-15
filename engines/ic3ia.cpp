@@ -199,9 +199,7 @@ void IC3IA::initialize()
   // NOTE need to use get_free_symbols NOT get_free_symbolic_consts
   // because the latter ignores uninterpreted functions
   UnorderedTermSet free_symbols;
-  std::cout << "free symbols init\n";
   get_free_symbols(ts_.init(), free_symbols);
-  std::cout << "free symbols trans\n";
   get_free_symbols(ts_.trans(), free_symbols);
   get_free_symbols(bad_, free_symbols); // RTC
 

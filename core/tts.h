@@ -5,7 +5,7 @@
 namespace pono{
 class TimedTransitionSystem : public RelationalTransitionSystem {
     public:
-    TimedTransitionSystem(const smt::SmtSolver & s, const TransitionSystem & ts) : RelationalTransitionSystem(s), original_ts_(ts), solver_(s){
+    TimedTransitionSystem(const smt::SmtSolver & s, const RelationalTransitionSystem & ts) : RelationalTransitionSystem(ts), original_ts_(ts), solver_(s){
         initialize();
     }
     static const std::string GLOBAL_CLOCK_VAR_NAME;
@@ -24,5 +24,4 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
     smt::UnorderedTermSet nonclock_vars_;
     smt::UnorderedTermSet clock_vars_;
 };
-
 }
