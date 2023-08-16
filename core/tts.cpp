@@ -39,6 +39,7 @@ namespace pono{
                 ));
         }
         time_elapse = solver_->make_term(And, time_elapse, invariant());
+        time_elapse = solver_->make_term(And, time_elapse, next(invariant()));
 
         // discrete = delta' = delta /\ trans
         Term discrete = solver_->make_term(Equal, delta, next(delta));
