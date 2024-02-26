@@ -36,6 +36,7 @@
 #include "modifiers/mod_ts_prop.h"
 #include "modifiers/prop_monitor.h"
 #include "modifiers/static_coi.h"
+#include "modifiers/property_rtc.h"
 #include "options/options.h"
 #include "printers/btor2_witness_printer.h"
 #include "printers/vcd_witness_printer.h"
@@ -185,6 +186,11 @@ ProverResult check_prop(PonoOptions pono_options,
 
   Property p(s, prop, prop_name);
 
+  // If we are checking rt-consistency, overwrite the property to the quantified rtc formula
+  if ( pono_options.rtconsistency_){
+    p = get_rt_consistency_property(p, ts);
+  }
+
   // end modification of the transition system and property
 
   Engine eng = pono_options.engine_;
@@ -315,11 +321,11 @@ int main(int argc, char ** argv)
     // HACK bool_model_generation for IC3IA breaks CegProphecyArrays
     // longer term fix will use a different solver in CegProphecyArrays,
     // but for now just force full model generation in that case
-    if (pono_options.rtconsistency_){
-      QuantifierTests qt;
-      qt.check();
-      return 0;
-    }
+    // if (pono_options.rtconsistency_){
+    //   QuantifierTests qt;
+    //   qt.check();
+    //   return 0;
+    // }
 
     SmtSolver s = create_solver_for(pono_options.smt_solver_,
                                     pono_options.engine_,

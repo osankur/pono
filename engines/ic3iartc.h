@@ -26,13 +26,6 @@ class IC3IARTC : public IC3IA
   smt::Term get_nextstate_model() const;
   void initialize();
 
-  private:
-  smt::Term getQuantifiedRTConsistencyBad();  
-  // state variable to quantified param
-  smt::UnorderedTermMap var2param_;
-  // quantified param to state var
-  smt::UnorderedTermMap param2var_;
-
 };
 
 }

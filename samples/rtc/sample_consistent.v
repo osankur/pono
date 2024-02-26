@@ -1,4 +1,7 @@
+/*
+ Automaton with 4 states, where the property is v == 0.
 
+*/
 module consistent(input clk, 
                      input i, output o);
   reg state;

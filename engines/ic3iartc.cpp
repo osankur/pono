@@ -119,18 +119,16 @@ void IC3IARTC::initialize()
   // modification
   super::super::initialize();
 
-
-  bad_ = getQuantifiedRTConsistencyBad();
-  cout << "RTC Bad property: " << bad_->to_string() <<'\n';
-  
   // add all the predicates from init and property to the abstraction
   // NOTE: abstract is called automatically in IC3Base initialize
   UnorderedTermSet preds;
+
   get_predicates(solver_, conc_ts_.init(), preds, false, false, true);
   size_t num_init_preds = preds.size();
   size_t num_prop_preds = 0;
   // get_predicates(solver_, bad_, preds, false, false, true);
-  for (const auto & p : preds) {
+  num_prop_preds = preds.size() - num_init_preds;
+  for (const auto &p : preds) {
     add_predicate(p);
   }
   logger.log(1, "Number predicates found in init: {}", num_init_preds);
@@ -142,7 +140,7 @@ void IC3IARTC::initialize()
   // populate cache for existing terms in solver_
   UnorderedTermMap & cache = to_solver_.get_cache();
   Term ns;
-  for (auto const & s : ts_.statevars()) {
+  for (auto const&s : ts_.statevars()) {
     // common variables are next states, unless used for refinement in IC3IA
     // then will refer to current state variables after untiming
     // need to cache both
@@ -158,9 +156,9 @@ void IC3IARTC::initialize()
   UnorderedTermSet free_symbols;
   get_free_symbols(ts_.init(), free_symbols);
   get_free_symbols(ts_.trans(), free_symbols);
-  get_free_symbols(bad_, free_symbols);  // RTC
+  get_free_symbols(bad_, free_symbols); // RTC
 
-  for (auto const & s : free_symbols) {
+  for (auto const&s : free_symbols) {
     assert(s->is_symbol());
     if (s->is_symbolic_const()) {
       // ignore constants
@@ -179,46 +177,6 @@ void IC3IARTC::initialize()
                "not supported in IC3IA yet.");
     options_.ic3_pregen_ = false;
   }
-}
-
-/**
- * Return the following quantified formula:
- * P(X) /\ ∀ Y. ∀I. T(X, I, Y) -> ~P(Y)
- */
-Term IC3IARTC::getQuantifiedRTConsistencyBad() {
-  // Map nextstatevar to param
-  UnorderedTermMap subst;
-  // for (const auto & sv : ts_.statevars()) {
-  //   cout << "State var: " << sv->to_string() << "\n";
-  // }
-  // for (const auto & sv : ts_.inputvars()) {
-  //   cout << "Input var: " << sv->to_string() << "\n";
-  // }
-
-  for (const auto & sv : ts_.statevars()) {
-    const Sort & sort = sv->get_sort();
-    Term p = solver_->make_param("#" + sv->to_string(), sort);
-    this->var2param_[sv] = p;
-    subst[ts_.next(sv)] = p;
-    this->param2var_[p] = sv;
-  }
-  for (const auto & sv : ts_.inputvars()) {
-    const Sort & sort = sv->get_sort();
-    Term p = solver_->make_param("#" + sv->to_string(), sort);
-    this->var2param_[sv] = p;
-    subst[sv] = p;
-    this->param2var_[p] = sv;
-  }
-
-  // std::cout << "trans: " << ts_.trans() << "\n";
-  Term transXY = solver_->substitute(ts_.trans(), subst);
-  // std::cout << "transXY: " << transXY << "\n";
-  Term badY = solver_->substitute(bad_, var2param_);
-  Term rhs = solver_->make_term(Implies, transXY, badY);
-  for (auto pv : param2var_) {
-    rhs = solver_->make_term(Forall, pv.first, rhs);
-  }
-  return solver_->make_term(And, solver_->make_term(Not, bad_), rhs);
 }
 
 }  // namespace pono
