@@ -43,3 +43,11 @@ The following packages are required for compilation to succeed
 - Cython
 - pip3 install toml scikit
 - libbison-dev
+
+## Testing
+To compile the tests uncomment the following lines in CMakeLists.txt
+
+    enable_testing()
+    add_subdirectory(tests)
+
+Then `./build/tests/test_ta` tests timed automata semantics.
