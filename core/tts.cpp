@@ -1,58 +1,93 @@
-#include "smt-switch/term.h"
 #include "core/tts.h"
+
+#include <cassert>
+#include "utils/logger.h"
+#include "smt-switch/term.h"
 using namespace smt;
-namespace pono{
-    const std::string TimedTransitionSystem::GLOBAL_CLOCK_VAR_NAME = "#global_time";
+namespace pono {
+const std::string TimedTransitionSystem::DELAY_VAR_NAME = "#DELTA";
+// const std::string TimedTransitionSystem::DUMMY_INIT_VAR_NAME = "#INIT";
 
-    void TimedTransitionSystem::initialize(){
-        // Register nonclock and clock variables
-        for (const auto & sv : statevars()) {
-            switch(sv->get_sort()->get_sort_kind()){
-                case smt::SortKind::REAL:
-                clock_vars_.insert(sv);
-                break;
-                default:
-                nonclock_vars_.insert(sv);
-                // throw PonoException("The timed automaton solver only accepts bool and real sorts. Got " + sv->get_sort()->to_string());
-            }
-        }
+void TimedTransitionSystem::encode_timed_automaton_delays(
+    const TimedAutomatonEncoding & encoding)
+{
+  if (encoded_delays_) return;
+  this->encoded_delays_ = true;
+  switch (encoding) {
+    case TimedAutomatonEncoding::Compact: 
+      encode_compact_delays();
+      break;
+    default:
+      assert(false);
+  }
+}
 
-        smt::Sort realsort = solver_->make_sort(REAL);
-        Term delta = TransitionSystem::make_statevar(GLOBAL_CLOCK_VAR_NAME, realsort);
-        // delta = 0
-        Term delta_init = solver_->make_term(Equal, delta, solver_->make_term((int64_t) 0, realsort));
-        
-        set_init(solver_->make_term(And, original_ts_.init(), delta_init));
+void TimedTransitionSystem::add_dummy_init_transitions(){
+  assert(!this->has_dummy_init_transitions_);
+  this->has_dummy_init_transitions_ = true;
+  // smt::Sort realsort = solver_->make_sort(REAL);
+  // dummy_init_bit_ = TransitionSystem::make_statevar(DELAY_VAR_NAME, realsort);
 
-        // time_elapse = delta <= delta' /\\ v' = v (for all nonclock v) /\\ x'=x+delta'-delta
-        Term time_elapse = solver_->make_term(Le, delta, next(delta));
-        for(auto & v : nonclock_vars_){
-            time_elapse = solver_->make_term(And, time_elapse, 
-                solver_->make_term(Equal, next(v), v));
-        }
-        for(auto & x : clock_vars_){
-            time_elapse = solver_->make_term(And, time_elapse, 
-                solver_->make_term(Equal, next(x), 
-                  solver_->make_term(Plus, x,
-                    solver_->make_term(Minus, next(delta), delta)
-                  )
-                ));
-        }
-        time_elapse = solver_->make_term(And, time_elapse, invariant());
-        time_elapse = solver_->make_term(And, time_elapse, next(invariant()));
+  smt::Term dummy_transition = solver_->make_term(true);  
+  for (auto v : statevars_) {
+    smt::Term vunchanged = solver_->make_term(Equal, v, next(v));
+    dummy_transition = solver_->make_term(And, dummy_transition, vunchanged);
+  }
+  dummy_transition = solver_->make_term(And, dummy_transition, init());
+  logger.log(4, "Dummy transitions: {}", dummy_transition);
+  // dummy_transition = X'=X/\ C'=C /\ init
+  // trans := trans \/ dummy_transition
+  set_trans(solver_->make_term(Or, trans(), dummy_transition));
+}
 
-        // discrete = delta' = delta /\ trans
-        Term discrete = solver_->make_term(Equal, delta, next(delta));
-        discrete = solver_->make_term(And, discrete, trans());
+void TimedTransitionSystem::encode_compact_delays(){
+  add_dummy_init_transitions();
+  smt::Sort realsort = solver_->make_sort(REAL);
+  delta_ = TransitionSystem::make_statevar(DELAY_VAR_NAME, realsort);
+  /*
+     * T(C,X, I, C',X') =
+     *    C >= 0 
+     * /\ delta >= 0 
+     * /\ locinvar(C,X)
+     * /\ (urgent -> delta = 0) 
+     * /\ (trans(C,X,I,C'-delta,X')
+     * /\ locinvar(X',C')
+     */
+  // smt::Term zero = solver_->make_term((int64_t)0, realsort);
+  smt::Term zero = solver_->make_term("0", realsort);
+  smt::Term clocks_nonnegative = solver_->make_term(true);
+  for (auto c : clock_vars_) {
+    clocks_nonnegative = 
+      solver_->make_term(And, 
+        clocks_nonnegative, 
+        solver_->make_term(Le, zero, c));
+  }
+  logger.log(4, "TA Clock >= 0: {}", clocks_nonnegative);
+  smt::Term new_trans = clocks_nonnegative;
 
-        set_trans(solver_->make_term(Or, discrete, time_elapse));
-        std::cout << "TA Init: " << init() << "\n";
-        std::cout << "TA Discrete: " << discrete << "\n";
-        std::cout << "TA Time elapse: " << time_elapse << "\n";
+  smt::Term delta_nonnegative = solver_->make_term(Le, zero, delta_);
+  logger.log(4, "TA delta >= 0: {}", delta_nonnegative);
+  new_trans = solver_->make_term(And, new_trans, delta_nonnegative);
 
-        for(auto & x : clock_vars_){
-          std::cout << "Clock " << x->to_string() << "\n";
-        }
+  smt::Term delta0ifurgent = 
+    solver_->make_term(Implies, urgent(), solver_->make_term(Equal, delta_, zero));
+  new_trans = solver_->make_term(And, new_trans, delta0ifurgent);
+  logger.log(4, "TA delta0ifurgent: {}", delta0ifurgent);
 
-    }
-} 
+  smt::UnorderedTermMap Cp2Cpmdelta;
+  for (auto c : clock_vars_) {
+    Cp2Cpmdelta[next(c)] = solver_->make_term(Minus, next(c), delta_);
+  }
+  logger.log(4, "TA Cp2Cpmdelta: {}", solver_->substitute(trans(), Cp2Cpmdelta));
+  new_trans = solver_->make_term(And, new_trans, solver_->substitute(trans(), Cp2Cpmdelta));
+
+  new_trans = solver_->make_term(And, new_trans, locinvar());
+  new_trans = solver_->make_term(And, new_trans, next(locinvar()));
+
+  // trans = discrete \/ time_elapse
+  set_trans(new_trans);
+  logger.log(4, "TA Init: {}", init());
+  logger.log(4, "TA locinvar: {}", locinvar());
+  logger.log(4, "TA urgent: {}", urgent());
+}
+}  // namespace pono

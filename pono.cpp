@@ -32,6 +32,7 @@
 #include "frontends/btor2_encoder.h"
 #include "frontends/smv_encoder.h"
 #include "frontends/vmt_encoder.h"
+#include "frontends/timed_vmt_encoder.h"
 #include "modifiers/control_signals.h"
 #include "modifiers/mod_ts_prop.h"
 #include "modifiers/prop_monitor.h"
@@ -404,15 +405,28 @@ int main(int argc, char ** argv)
 
     } else if (file_ext == "smv" || file_ext == "vmt" || file_ext == "smt2") {
       logger.log(2, "Parsing SMV/VMT file: {}", pono_options.filename_);
-      RelationalTransitionSystem rts(s);
+      if (pono_options.timed_automaton_ && file_ext != "vmt"){
+        throw PonoException("Timed automata are only supported in the .vmt format");
+      }
+
+      std::unique_ptr<RelationalTransitionSystem> rts = nullptr;
       TermVec propvec;
-      if (file_ext == "smv") {
-        SMVEncoder smv_enc(pono_options.filename_, rts);
-        propvec = smv_enc.propvec();
-      } else {
-        assert(file_ext == "vmt" || file_ext == "smt2" );
-        VMTEncoder vmt_enc(pono_options.filename_, rts);
+      if (pono_options.timed_automaton_ && file_ext == "vmt"){
+        // The timed automaton case
+        rts = std::make_unique<TimedTransitionSystem>(s);
+        TimedVMTEncoder vmt_enc(pono_options.filename_, *dynamic_cast<TimedTransitionSystem*>(rts.get()));
         propvec = vmt_enc.propvec();
+      } else {
+        // The standard (non-timed automaton) case
+        rts = std::make_unique<RelationalTransitionSystem>(s);
+        if (file_ext == "smv") {
+          SMVEncoder smv_enc(pono_options.filename_, *rts);
+          propvec = smv_enc.propvec();
+        } else {
+          assert(file_ext == "vmt" || file_ext == "smt2" );
+          VMTEncoder vmt_enc(pono_options.filename_, *rts);
+          propvec = vmt_enc.propvec();
+        }
       }
       unsigned int num_props = propvec.size();
       if (pono_options.prop_idx_ >= num_props) {
@@ -426,7 +440,7 @@ int main(int argc, char ** argv)
       // get property name before it is rewritten
 
       std::vector<UnorderedTermMap> cex;
-      res = check_prop(pono_options, prop, rts, s, cex);
+      res = check_prop(pono_options, prop, *rts, s, cex);
       // we assume that a prover never returns 'ERROR'
       assert(res != ERROR);
 
@@ -444,7 +458,7 @@ int main(int argc, char ** argv)
         }
         assert(pono_options.witness_ || pono_options.vcd_name_.empty());
         if (!pono_options.vcd_name_.empty()) {
-          VCDWitnessPrinter vcdprinter(rts, cex);
+          VCDWitnessPrinter vcdprinter(*rts, cex);
           vcdprinter.dump_trace_to_file(pono_options.vcd_name_);
         }
       } else if (res == TRUE) {
@@ -453,53 +467,55 @@ int main(int argc, char ** argv)
         assert(res == pono::UNKNOWN);
         cout << "unknown" << endl;
       }
-    } else if (file_ext == "ta"){
-      logger.log(2, "Parsing timed automaton VMT file: {}", pono_options.filename_);
-      RelationalTransitionSystem rts(s);
-      TermVec propvec;
-      VMTEncoder vmt_enc(pono_options.filename_, rts);
-      propvec = vmt_enc.propvec();
-      unsigned int num_props = propvec.size();
-      if (pono_options.prop_idx_ >= num_props) {
-        throw PonoException(
-            "Property index " + to_string(pono_options.prop_idx_)
-            + " is greater than the number of properties in file "
-            + pono_options.filename_ + " (" + to_string(num_props) + ")");
-      }
+    } 
+    // else if (file_ext == "ta"){
+    //   logger.log(2, "Parsing timed automaton VMT file: {}", pono_options.filename_);
+    //   RelationalTransitionSystem rts(s);
+    //   TermVec propvec;
+    //   VMTEncoder vmt_enc(pono_options.filename_, rts);
+    //   propvec = vmt_enc.propvec();
+    //   unsigned int num_props = propvec.size();
+    //   if (pono_options.prop_idx_ >= num_props) {
+    //     throw PonoException(
+    //         "Property index " + to_string(pono_options.prop_idx_)
+    //         + " is greater than the number of properties in file "
+    //         + pono_options.filename_ + " (" + to_string(num_props) + ")");
+    //   }
 
-      Term prop = propvec[pono_options.prop_idx_];
-      // get property name before it is rewritten
+    //   Term prop = propvec[pono_options.prop_idx_];
+    //   // get property name before it is rewritten
 
-      std::vector<UnorderedTermMap> cex;
-      TimedTransitionSystem tts(s, rts);
-      res = check_prop(pono_options, prop, tts, s, cex);
-      // we assume that a prover never returns 'ERROR'
-      assert(res != ERROR);
+    //   std::vector<UnorderedTermMap> cex;
+    //   TimedTransitionSystem tts(s, rts);
+    //   res = check_prop(pono_options, prop, tts, s, cex);
+    //   // we assume that a prover never returns 'ERROR'
+    //   assert(res != ERROR);
 
-      logger.log(
-          0, "Property {} is {}", pono_options.prop_idx_, to_string(res));
+    //   logger.log(
+    //       0, "Property {} is {}", pono_options.prop_idx_, to_string(res));
 
-      if (res == FALSE) {
-        cout << "sat" << endl;
-        assert(pono_options.witness_ || cex.size() == 0);
-        for (size_t t = 0; t < cex.size(); t++) {
-          cout << "AT TIME " << t << endl;
-          for (auto elem : cex[t]) {
-            cout << "\t" << elem.first << " : " << elem.second << endl;
-          }
-        }
-        assert(pono_options.witness_ || pono_options.vcd_name_.empty());
-        if (!pono_options.vcd_name_.empty()) {
-          VCDWitnessPrinter vcdprinter(tts, cex);
-          vcdprinter.dump_trace_to_file(pono_options.vcd_name_);
-        }
-      } else if (res == TRUE) {
-        cout << "unsat" << endl;
-      } else {
-        assert(res == pono::UNKNOWN);
-        cout << "unknown" << endl;
-      }
-    } else {
+    //   if (res == FALSE) {
+    //     cout << "sat" << endl;
+    //     assert(pono_options.witness_ || cex.size() == 0);
+    //     for (size_t t = 0; t < cex.size(); t++) {
+    //       cout << "AT TIME " << t << endl;
+    //       for (auto elem : cex[t]) {
+    //         cout << "\t" << elem.first << " : " << elem.second << endl;
+    //       }
+    //     }
+    //     assert(pono_options.witness_ || pono_options.vcd_name_.empty());
+    //     if (!pono_options.vcd_name_.empty()) {
+    //       VCDWitnessPrinter vcdprinter(tts, cex);
+    //       vcdprinter.dump_trace_to_file(pono_options.vcd_name_);
+    //     }
+    //   } else if (res == TRUE) {
+    //     cout << "unsat" << endl;
+    //   } else {
+    //     assert(res == pono::UNKNOWN);
+    //     cout << "unknown" << endl;
+    //  }
+    //}
+    else {
       throw PonoException("Unrecognized file extension " + file_ext
                           + " for file " + pono_options.filename_);
     }

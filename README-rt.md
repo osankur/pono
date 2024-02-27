@@ -24,6 +24,17 @@ On an rt-inconsistent input, a witness can be displayed with the `--witness` opt
 
     ./pono -e bmc --smt-solver cvc5 --rt-consistency --witness ../samples/rtc/sample_consistent.smv
 
+## VMT: Timed Automaton Extension
+All real variables for which a `:nextclock` attribute is defined is considered to be a clock.
+In addition, formulas with the following attributes can be defined:
+- `locinvar` defines the location invariant. In case of multiple occurrences, the conjunction of all is the invariant.
+A locinvar expression can only use current variables. (TODO add a check)
+- `urgent` defines the set of states where time cannot elapse. In case of multiple occurrences, the disjunction of all is the set of urgent states.
+An urgent expression can only use current nonclock variables. (TODO add a check)
+
+The VMT file given as input must only describe the discrete transitions of the timed automaton (i.e. the semantics of the edges) while time delays 
+are added automatically by Pono.
+
 ## Installation
 The following packages are required for compilation to succeed
 
