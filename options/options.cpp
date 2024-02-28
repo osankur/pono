@@ -91,7 +91,8 @@ enum optionIndex
   KIND_NO_IND_CHECK_PROPERTY,
   KIND_ONE_TIME_BASE_CHECK,
   KIND_BOUND_STEP,
-  RT_CONSISTENCY
+  RT_CONSISTENCY,
+  TIMED_AUTOMATON
 };
 
 struct Arg : public option::Arg
@@ -594,6 +595,13 @@ const option::Descriptor usage[] = {
     Arg::None,
     "  --rt-consistency \tcheck rt-consistency "
     },
+  { TIMED_AUTOMATON,
+    0,
+    "ta",
+    "timed-automaton",
+    Arg::None,
+    "  --timed-automaton, -ta \tinterpret the input file as a timed automaton"
+    },
 
   { 0, 0, 0, 0, 0, 0 }
 };
@@ -785,6 +793,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
 	    throw PonoException("--kind-bound-step must be greater than 0");
 	  break;
         case RT_CONSISTENCY: rtconsistency_ = true; break;
+        case TIMED_AUTOMATON: timed_automaton_ = true; break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL
           // which aborts the parse with an error

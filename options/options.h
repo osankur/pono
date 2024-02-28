@@ -152,7 +152,8 @@ class PonoOptions
         kind_no_ind_check_property_(default_kind_no_ind_check_property_),
         kind_one_time_base_check_(default_kind_one_time_base_check_),
         kind_bound_step_(default_kind_bound_step_),
-        rtconsistency_(false)
+        rtconsistency_(default_rt_consistency_),
+        timed_automaton_(default_timed_automaton_)
   {
   }
 
@@ -194,6 +195,7 @@ class PonoOptions
   bool show_invar_;   ///< display invariant when running from command line
   bool check_invar_;  ///< check invariants (if available) when run through CLI
   bool rtconsistency_;
+  bool timed_automaton_;
   // ic3 options
   bool ic3_pregen_;  ///< generalize counterexamples in IC3
   bool ic3_indgen_;  ///< inductive generalization in IC3
@@ -362,6 +364,8 @@ private:
   static const bool default_kind_no_ind_check_property_ = false;
   static const bool default_kind_one_time_base_check_ = false;
   static const unsigned default_kind_bound_step_ = 1;
+  static const bool default_rt_consistency_ = false;
+  static const bool default_timed_automaton_ = false;
 };
 
 // Useful functions for printing etc...

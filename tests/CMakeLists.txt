@@ -67,7 +67,7 @@ pono_add_test(test_walkers)
 pono_add_test(test_pseudo_init_and_prop)
 pono_add_test(test_promote_inputvars)
 pono_add_test(test_partial_model)
-
+pono_add_test(test_ta)
 # add_executable(test_quant "${CMAKE_CURRENT_SOURCE_DIR}/test_quant.cpp")
 # target_link_libraries(test_quant gtest_main)
 # target_link_libraries(test_quant pono-test-lib) # also includes pono-lib because it's linked

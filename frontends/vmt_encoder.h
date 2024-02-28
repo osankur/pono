@@ -35,7 +35,7 @@ class VMTEncoder : public smt::SmtLibReader
 
   void new_symbol(const std::string & name, const smt::Sort & sort) override;
 
-  void term_attribute(const smt::Term & term,
+  virtual void term_attribute(const smt::Term & term,
                       const std::string & keyword,
                       const std::string & value) override;
 

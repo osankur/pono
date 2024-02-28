@@ -43,24 +43,25 @@ void TimedTransitionSystem::add_dummy_init_transitions(){
 void TimedTransitionSystem::encode_compact_delays(){
   add_dummy_init_transitions();
   smt::Sort realsort = solver_->make_sort(REAL);
-  delta_ = TransitionSystem::make_statevar(DELAY_VAR_NAME, realsort);
+  delta_ = TransitionSystem::make_inputvar(DELAY_VAR_NAME, realsort);
   /*
      * T(C,X, I, C',X') =
      *    C >= 0 
      * /\ delta >= 0 
      * /\ locinvar(C,X)
-     * /\ (urgent -> delta = 0) 
+     * /\ (urgent(X') -> delta = 0) 
      * /\ (trans(C,X,I,C'-delta,X')
      * /\ locinvar(X',C')
      */
   // smt::Term zero = solver_->make_term((int64_t)0, realsort);
   smt::Term zero = solver_->make_term("0", realsort);
   smt::Term clocks_nonnegative = solver_->make_term(true);
+  smt::Term clocks_are_zero = solver_->make_term(true);
   for (auto c : clock_vars_) {
-    clocks_nonnegative = 
+    clocks_are_zero = 
       solver_->make_term(And, 
-        clocks_nonnegative, 
-        solver_->make_term(Le, zero, c));
+        clocks_are_zero, 
+        solver_->make_term(Equal, c, zero));
   }
   logger.log(4, "TA Clock >= 0: {}", clocks_nonnegative);
   smt::Term new_trans = clocks_nonnegative;
@@ -70,7 +71,7 @@ void TimedTransitionSystem::encode_compact_delays(){
   new_trans = solver_->make_term(And, new_trans, delta_nonnegative);
 
   smt::Term delta0ifurgent = 
-    solver_->make_term(Implies, urgent(), solver_->make_term(Equal, delta_, zero));
+    solver_->make_term(Implies, next(urgent()), solver_->make_term(Equal, delta_, zero));
   new_trans = solver_->make_term(And, new_trans, delta0ifurgent);
   logger.log(4, "TA delta0ifurgent: {}", delta0ifurgent);
 
@@ -86,6 +87,8 @@ void TimedTransitionSystem::encode_compact_delays(){
 
   // trans = discrete \/ time_elapse
   set_trans(new_trans);
+  set_init(solver_->make_term(And, init(), clocks_are_zero));
+  // init = init /\ C = 0
   logger.log(4, "TA Init: {}", init());
   logger.log(4, "TA locinvar: {}", locinvar());
   logger.log(4, "TA urgent: {}", urgent());

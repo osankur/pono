@@ -8,10 +8,9 @@
 (declare-fun loc__AT0 () Bool)
 (declare-fun loc__AT1 () Bool)
 
-(define-fun .def_0 () Real (! x__AT0 :next x__AT1))
-(define-fun .def_1 () Real (! y__AT0 :next y__AT1))
+(define-fun .def_0 () Real (! x__AT0 :nextclock x__AT1))
+(define-fun .def_1 () Real (! y__AT0 :nextclock y__AT1))
 (define-fun .def_2 () Real (! loc__AT0 :next loc__AT1))
-
 
 ;; Initial state
 (define-fun .def_3 () Bool (! (and
@@ -24,7 +23,7 @@
 (define-fun .def_4 () Bool (! (and
     true
     (<= x__AT0 (to_real 3))
-) :invar true))
+) :locinvar true))
 
 ;; Transitions
 (define-fun .def_18 () Bool (! (and

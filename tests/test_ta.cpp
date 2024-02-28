@@ -16,8 +16,38 @@ using namespace std;
 namespace pono_tests {
 
 const unordered_map<string, pono::ProverResult> ta_inputs(
-    { { "simple_ta.vmt", pono::ProverResult::TRUE },
-      { "simple_ta_2.vmt", pono::ProverResult::FALSE } });
+    { 
+      { "test_urgent.vmt", pono::ProverResult::TRUE },      
+      { "simple_ta.vmt", pono::ProverResult::TRUE },
+      { "simple_ta_2.vmt", pono::ProverResult::FALSE },
+      { "rod_2.smv_4.vmt", pono::ProverResult::TRUE }, // rationals *10
+      { "railway_gate_continuous.smv_1.vmt", pono::ProverResult::FALSE }, // rationals * 10
+      { "csma_02.smv_1.vmt", pono::ProverResult::TRUE },
+      { "simple_ta.vmt", pono::ProverResult::TRUE },
+      { "lynch_protocol_02.smv_0.vmt", pono::ProverResult::TRUE },
+      { "fisher_uppaal_02.smv_0.vmt", pono::ProverResult::TRUE },
+      { "simple_ta_3.vmt", pono::ProverResult::TRUE },
+      { "simple_ta_2.vmt", pono::ProverResult::FALSE },
+      { "simple_ta_unsafe.vmt", pono::ProverResult::FALSE },
+      { "critical_region_02.smv_0.vmt", pono::ProverResult::FALSE },
+      { "test_urgent_2.vmt", pono::ProverResult::TRUE },
+      { "one_loc_safe.vmt", pono::ProverResult::TRUE },
+      { "one_loc_unsafe.vmt", pono::ProverResult::FALSE },
+      { "simple_ta_2.vmt", pono::ProverResult::FALSE },
+      { "bug_compact_lu.vmt", pono::ProverResult::FALSE },
+      { "critical_region_debug.vmt", pono::ProverResult::FALSE },
+      { "fddi_02.smv_0.vmt", pono::ProverResult::TRUE },
+      { "fischer_star_timed_2.smv_0.vmt", pono::ProverResult::TRUE },
+      { "fischer_star_timed_2.smv_1.vmt", pono::ProverResult::FALSE },
+      { "fischer_star_timed_3.smv_0.vmt", pono::ProverResult::TRUE },
+      { "fischer_star_timed_3.smv_1.vmt", pono::ProverResult::FALSE },
+      { "fischer_timed_2.smv_7.vmt", pono::ProverResult::TRUE },
+      { "fischer_timed_2.smv_8.vmt", pono::ProverResult::FALSE },
+      { "fisher_timed_sv_2.smv_0.vmt", pono::ProverResult::FALSE },
+      { "gate.smv_0.vmt", pono::ProverResult::TRUE },
+      { "train_gate_02.smv_0.vmt", pono::ProverResult::TRUE },
+      { "railway_gate_continuous.smv_0.vmt", pono::ProverResult::TRUE }  // rationals * 10      
+    });
 
 class TATests
     : public ::testing::Test,

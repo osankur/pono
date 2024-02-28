@@ -55,8 +55,8 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
     void add_locinvar(const smt::Term & inv){
         locinvar_ = solver_->make_term(smt::And, locinvar_, inv);
     }
-    void add_urgent(const smt::Term & inv){
-        locinvar_ = solver_->make_term(smt::Or, locinvar_, inv);
+    void add_urgent(const smt::Term & u){
+        urgent_ = solver_->make_term(smt::Or, urgent(), u);
     }
 
     /**
