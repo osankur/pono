@@ -55,7 +55,7 @@ Note that the IC3 algorithms do not currently have witness generation.
 The following packages are required for compilation to succeed
 
 - flex, bison
-- libgmp-devA
+- libgmp-dev
 - Cython
 - pip3 install toml scikit
 - libbison-dev

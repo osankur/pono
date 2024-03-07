@@ -24,6 +24,7 @@ IC3IARTC::IC3IARTC(const Property & p,
                    PonoOptions opt)
     : IC3IA(p, ts, s, opt)
 {
+  logger.log(1, "Engine: IC3IARTC");
   assert(ts_.solver() == orig_property_.solver());
 }
 
@@ -86,22 +87,22 @@ void IC3IARTC::reconstruct_trace(const ProofGoal * pg, TermVec & out)
  *
  * TODO: do we want an assignment on concrete states or predicates?
  */
-Term IC3IARTC::get_nextstate_model() const
-{
-  TermVec conjuncts;
-  conjuncts.reserve(predlbls_.size());
-  Term val;
-  for (const auto & p : predlbls_) {
-    if ((val = solver_->get_value(ts_.next(p))) == solver_true_) {
-      conjuncts.push_back(lbl2pred_.at(p));
-    } else {
-      conjuncts.push_back(solver_->make_term(Not, lbl2pred_.at(p)));
-    }
-    assert(val->is_value());
-  }
+// Term IC3IARTC::get_nextstate_model() const
+// {
+//   TermVec conjuncts;
+//   conjuncts.reserve(predlbls_.size());
+//   Term val;
+//   for (const auto & p : predlbls_) {
+//     if ((val = solver_->get_value(ts_.next(p))) == solver_true_) {
+//       conjuncts.push_back(lbl2pred_.at(p));
+//     } else {
+//       conjuncts.push_back(solver_->make_term(Not, lbl2pred_.at(p)));
+//     }
+//     assert(val->is_value());
+//   }
 
-  return make_and(conjuncts, this->solver_);
-}
+//   return make_and(conjuncts, this->solver_);
+// }
 
 /**
  * This is a copy of IC3IA::initialize with the following difference:
@@ -109,74 +110,74 @@ Term IC3IARTC::get_nextstate_model() const
  * get_predicates fail at quantifiers) We could also comment out
  * get_free_symbols for bad_ for the same reason.
  */
-void IC3IARTC::initialize()
-{
-  if (initialized_) {
-    return;
-  }
+// void IC3IARTC::initialize()
+// {
+//   if (initialized_) {
+//     return;
+//   }
 
-  // Skip initialize of IC3IA. The present function is a copy with a simple
-  // modification
-  super::super::initialize();
+//   // Skip initialize of IC3IA. The present function is a copy with a simple
+//   // modification
+//   super::super::initialize();
 
-  // add all the predicates from init and property to the abstraction
-  // NOTE: abstract is called automatically in IC3Base initialize
-  UnorderedTermSet preds;
+//   // add all the predicates from init and property to the abstraction
+//   // NOTE: abstract is called automatically in IC3Base initialize
+//   UnorderedTermSet preds;
 
-  get_predicates(solver_, conc_ts_.init(), preds, false, false, true);
-  size_t num_init_preds = preds.size();
-  size_t num_prop_preds = 0;
-  // get_predicates(solver_, bad_, preds, false, false, true);
-  num_prop_preds = preds.size() - num_init_preds;
-  for (const auto &p : preds) {
-    add_predicate(p);
-  }
-  logger.log(1, "Number predicates found in init: {}", num_init_preds);
-  logger.log(1, "Number predicates found in prop: {}", num_prop_preds);
-  logger.log(1, "Total number of initial predicates: {}", preds.size());
-  // more predicates will be added during refinement
-  // these ones are just initial predicates
+//   get_predicates(solver_, conc_ts_.init(), preds, false, false, true);
+//   size_t num_init_preds = preds.size();
+//   size_t num_prop_preds = 0;
+//   // get_predicates(solver_, bad_, preds, false, false, true); // RTC
+//   num_prop_preds = preds.size() - num_init_preds;
+//   for (const auto &p : preds) {
+//     add_predicate(p);
+//   }
+//   logger.log(1, "Number predicates found in init: {}", num_init_preds);
+//   logger.log(1, "Number predicates found in prop: {}", num_prop_preds);
+//   logger.log(1, "Total number of initial predicates: {}", preds.size());
+//   // more predicates will be added during refinement
+//   // these ones are just initial predicates
 
-  // populate cache for existing terms in solver_
-  UnorderedTermMap & cache = to_solver_.get_cache();
-  Term ns;
-  for (auto const&s : ts_.statevars()) {
-    // common variables are next states, unless used for refinement in IC3IA
-    // then will refer to current state variables after untiming
-    // need to cache both
-    cache[to_interpolator_.transfer_term(s)] = s;
-    ns = ts_.next(s);
-    cache[to_interpolator_.transfer_term(ns)] = ns;
-  }
+//   // populate cache for existing terms in solver_
+//   UnorderedTermMap & cache = to_solver_.get_cache();
+//   Term ns;
+//   for (auto const&s : ts_.statevars()) {
+//     // common variables are next states, unless used for refinement in IC3IA
+//     // then will refer to current state variables after untiming
+//     // need to cache both
+//     cache[to_interpolator_.transfer_term(s)] = s;
+//     ns = ts_.next(s);
+//     cache[to_interpolator_.transfer_term(ns)] = ns;
+//   }
 
-  // need to add uninterpreted functions as well
-  // first need to find them all
-  // NOTE need to use get_free_symbols NOT get_free_symbolic_consts
-  // because the latter ignores uninterpreted functions
-  UnorderedTermSet free_symbols;
-  get_free_symbols(ts_.init(), free_symbols);
-  get_free_symbols(ts_.trans(), free_symbols);
-  get_free_symbols(bad_, free_symbols); // RTC
+//   // need to add uninterpreted functions as well
+//   // first need to find them all
+//   // NOTE need to use get_free_symbols NOT get_free_symbolic_consts
+//   // because the latter ignores uninterpreted functions
+//   UnorderedTermSet free_symbols;
+//   get_free_symbols(ts_.init(), free_symbols);
+//   get_free_symbols(ts_.trans(), free_symbols);
+//   // get_free_symbols(bad_, free_symbols); // RTC
 
-  for (auto const&s : free_symbols) {
-    assert(s->is_symbol());
-    if (s->is_symbolic_const()) {
-      // ignore constants
-      continue;
-    }
-    cache[to_interpolator_.transfer_term(s)] = s;
-  } 
+//   for (auto const&s : free_symbols) {
+//     assert(s->is_symbol());
+//     if (s->is_symbolic_const()) {
+//       // ignore constants
+//       continue;
+//     }
+//     cache[to_interpolator_.transfer_term(s)] = s;
+//   } 
 
-  // TODO fix generalize_predecessor for ic3ia
-  //      might need to override it
-  //      behaves a bit differently with both concrete and abstract next state
-  //      vars
-  if (options_.ic3_pregen_) {
-    logger.log(1,
-               "WARNING automatically disabling predecessor generalization -- "
-               "not supported in IC3IA yet.");
-    options_.ic3_pregen_ = false;
-  }
-}
+//   // TODO fix generalize_predecessor for ic3ia
+//   //      might need to override it
+//   //      behaves a bit differently with both concrete and abstract next state
+//   //      vars
+//   if (options_.ic3_pregen_) {
+//     logger.log(1,
+//                "WARNING automatically disabling predecessor generalization -- "
+//                "not supported in IC3IA yet.");
+//     options_.ic3_pregen_ = false;
+//   }
+// }
 
 }  // namespace pono

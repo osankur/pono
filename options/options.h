@@ -153,7 +153,8 @@ class PonoOptions
         kind_one_time_base_check_(default_kind_one_time_base_check_),
         kind_bound_step_(default_kind_bound_step_),
         rtconsistency_(default_rt_consistency_),
-        timed_automaton_(default_timed_automaton_)
+        timed_automaton_(default_timed_automaton_),
+        interpolator_(default_interpolator_)
   {
   }
 
@@ -190,6 +191,7 @@ class PonoOptions
   std::string clock_name_;
   std::string filename_;
   smt::SolverEnum smt_solver_;  ///< underlying smt solver
+  smt::SolverEnum interpolator_;  ///< interpolator used by IC3IA and IC3IARTC
   bool logging_smt_solver_;
   bool static_coi_;
   bool show_invar_;   ///< display invariant when running from command line
@@ -366,6 +368,7 @@ private:
   static const unsigned default_kind_bound_step_ = 1;
   static const bool default_rt_consistency_ = false;
   static const bool default_timed_automaton_ = false;
+  static const smt::SolverEnum default_interpolator_ = smt::MSAT_INTERPOLATOR;
 };
 
 // Useful functions for printing etc...

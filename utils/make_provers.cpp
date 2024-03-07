@@ -77,7 +77,11 @@ shared_ptr<Prover> make_prover(Engine e,
     return make_shared<IC3Bits>(p, ts, slv, opts);
   } else if (e == IC3IA_ENGINE) {
 #ifdef WITH_MSAT
-    return make_shared<IC3IA>(p, ts, slv, opts);
+    if (opts.rtconsistency_){
+      return make_shared<IC3IARTC>(p, ts, slv, opts);
+    } else {
+      return make_shared<IC3IA>(p, ts, slv, opts);
+    }
 #else
     throw PonoException(
         "IC3IA uses MathSAT for interpolants, but not built with MathSAT");

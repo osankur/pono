@@ -23,8 +23,8 @@ class IC3IARTC : public IC3IA
 
   typedef IC3IA super;
   void reconstruct_trace(const ProofGoal * pg, smt::TermVec & out) override;
-  smt::Term get_nextstate_model() const;
-  void initialize();
+  // smt::Term get_nextstate_model() const;
+  // void initialize();
 
 };
 

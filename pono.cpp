@@ -96,7 +96,6 @@ class QuantifierTests
     Property p(rts.solver(), wit);
 
     PonoOptions po;
-    // po.rtconsistency_= true;
     IC3IARTC ic3ia(p, rts, s, po );
     ProverResult r = ic3ia.prove();
     std::cout << "Result: " << r << "\n";
@@ -468,53 +467,6 @@ int main(int argc, char ** argv)
         cout << "unknown" << endl;
       }
     } 
-    // else if (file_ext == "ta"){
-    //   logger.log(2, "Parsing timed automaton VMT file: {}", pono_options.filename_);
-    //   RelationalTransitionSystem rts(s);
-    //   TermVec propvec;
-    //   VMTEncoder vmt_enc(pono_options.filename_, rts);
-    //   propvec = vmt_enc.propvec();
-    //   unsigned int num_props = propvec.size();
-    //   if (pono_options.prop_idx_ >= num_props) {
-    //     throw PonoException(
-    //         "Property index " + to_string(pono_options.prop_idx_)
-    //         + " is greater than the number of properties in file "
-    //         + pono_options.filename_ + " (" + to_string(num_props) + ")");
-    //   }
-
-    //   Term prop = propvec[pono_options.prop_idx_];
-    //   // get property name before it is rewritten
-
-    //   std::vector<UnorderedTermMap> cex;
-    //   TimedTransitionSystem tts(s, rts);
-    //   res = check_prop(pono_options, prop, tts, s, cex);
-    //   // we assume that a prover never returns 'ERROR'
-    //   assert(res != ERROR);
-
-    //   logger.log(
-    //       0, "Property {} is {}", pono_options.prop_idx_, to_string(res));
-
-    //   if (res == FALSE) {
-    //     cout << "sat" << endl;
-    //     assert(pono_options.witness_ || cex.size() == 0);
-    //     for (size_t t = 0; t < cex.size(); t++) {
-    //       cout << "AT TIME " << t << endl;
-    //       for (auto elem : cex[t]) {
-    //         cout << "\t" << elem.first << " : " << elem.second << endl;
-    //       }
-    //     }
-    //     assert(pono_options.witness_ || pono_options.vcd_name_.empty());
-    //     if (!pono_options.vcd_name_.empty()) {
-    //       VCDWitnessPrinter vcdprinter(tts, cex);
-    //       vcdprinter.dump_trace_to_file(pono_options.vcd_name_);
-    //     }
-    //   } else if (res == TRUE) {
-    //     cout << "unsat" << endl;
-    //   } else {
-    //     assert(res == pono::UNKNOWN);
-    //     cout << "unknown" << endl;
-    //  }
-    //}
     else {
       throw PonoException("Unrecognized file extension " + file_ext
                           + " for file " + pono_options.filename_);

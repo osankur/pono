@@ -49,7 +49,7 @@ IC3IA::IC3IA(const Property & p,
       ia_(conc_ts_, ts_, unroller_),
       // only mathsat interpolator supported
       interpolator_(create_interpolating_solver_for(
-      SolverEnum::MSAT_INTERPOLATOR, Engine::IC3IA_ENGINE)),
+      opt.interpolator_, Engine::IC3IA_ENGINE)),
       // interpolator_(create_interpolating_solver_for(
       //     s->get_solver_enum(), Engine::IC3IA_ENGINE)),
       // interpolator_(create_interpolating_solver_for(
@@ -279,11 +279,22 @@ RefineResult IC3IA::refine()
     if (i + 1 < cex_length) {
       t = solver_->make_term(And, t, unroller_.at_time(conc_ts_.trans(), i));
     }
-    std::cout << "Transferring " << t->to_string() << "\n";
+    // std::cout << "Transferring " << t->to_string() << "\n";
     formulae.push_back(to_interpolator_.transfer_term(t, BOOL));
   }
-  logger.log(3, "Getting seq interpolant");
+  logger.log(1, "Getting seq interpolant for formulae:");
+  std::cout << "Getting formulae:\n";
+  for (auto f : formulae) {
+    std::cout << f << "\n";
+  }
+  // interpolator_->reset_assertions();
   // std::cout << interpolator_->get_solver_enum() << "\n";
+  // std::cout << "Asking for sequence interpolant:\n";
+  // interpolator_->dump_smt2("/tmp/a.smt");
+
+  // for (auto f : formulae){
+  //   std::cout << f << "\n";
+  // }
   TermVec out_interpolants;
   Result r =
       interpolator_->get_sequence_interpolants(formulae, out_interpolants);
@@ -300,8 +311,8 @@ RefineResult IC3IA::refine()
   // have already been cached in to_solver_
   longest_cex_length_ = cex_length;
 
-  // logger.log(3, "Seq interpolant size: ");
-  std::cout << "Interp size : " <<  + out_interpolants.size() << "\n";
+  logger.log(3, "Seq interpolant size: ");
+  // std::cout << "Interp size : " <<  + out_interpolants.size() << "\n";
   UnorderedTermSet preds;
   for (auto const&I : out_interpolants) {
     if (!I) {

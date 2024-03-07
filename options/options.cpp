@@ -44,6 +44,7 @@ enum optionIndex
   RESET_BND,
   CLK,
   SMT_SOLVER,
+  INTERPOLATOR,
   LOGGING_SMT_SOLVER,
   NO_IC3_PREGEN,
   NO_IC3_INDGEN,
@@ -698,6 +699,14 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
             break;
           }
           break;
+        }
+        case INTERPOLATOR: {
+          if (opt.arg == std::string("MSAT")) {
+            smt_solver_ = smt::MSAT;
+          } else {
+            throw PonoException("Invalid interpolator: " + std::string(opt.arg));
+            break;
+          }
         }
         case LOGGING_SMT_SOLVER: logging_smt_solver_ = true; break;
         case WITNESS: witness_ = true; break;

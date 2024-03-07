@@ -127,6 +127,7 @@ set(INCLUDE_DIRS
   "${PROJECT_SOURCE_DIR}/contrib/optionparser-1.7/src"
   "${PROJECT_SOURCE_DIR}/deps/btor2tools/src"
   "${SMT_SWITCH_DIR}/local/include"
+  "${SMT_SWITCH_DIR}/deps/cvc5/src"
   # generated Bison headers go in build directory
   "${CMAKE_CURRENT_BINARY_DIR}"
   "${GMP_INCLUDE_DIR}"
@@ -174,6 +175,7 @@ set(SOURCES
   "${PROJECT_SOURCE_DIR}/printers/vcd_witness_printer.cpp"
   "${PROJECT_SOURCE_DIR}/refiners/array_axiom_enumerator.cpp"
   "${PROJECT_SOURCE_DIR}/smt/available_solvers.cpp"
+  "${PROJECT_SOURCE_DIR}/smt/opensmt_interpolator.cpp"
   "${PROJECT_SOURCE_DIR}/utils/fcoi.cpp"
   "${PROJECT_SOURCE_DIR}/utils/logger.cpp"
   "${PROJECT_SOURCE_DIR}/utils/make_provers.cpp"

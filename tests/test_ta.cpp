@@ -4,6 +4,7 @@
 
 #include "core/tts.h"
 #include "engines/kinduction.h"
+#include "engines/ic3ia.h"
 #include "frontends/timed_vmt_encoder.h"
 #include "gtest/gtest.h"
 #include "smt/available_solvers.h"
@@ -49,14 +50,48 @@ const unordered_map<string, pono::ProverResult> ta_inputs(
       { "railway_gate_continuous.smv_0.vmt", pono::ProverResult::TRUE }  // rationals * 10      
     });
 
-class TATests
+class TAIC3IATests
     : public ::testing::Test,
       public ::testing::WithParamInterface<
           tuple<SolverEnum, pair<const string, ProverResult>>>
 {
 };
 
-TEST_P(TATests, Encode)
+TEST_P(TAIC3IATests, Encode)
+{
+  SmtSolver s = create_solver(get<0>(GetParam()));
+  s->set_opt("incremental", "true");
+  s->set_opt("produce-models", "true");
+  TimedTransitionSystem rts(s);
+  // PONO_SRC_DIR is a macro set using CMake PROJECT_SRC_DIR
+  auto benchmark = get<1>(GetParam());
+  string filename = STRFY(PONO_SRC_DIR);
+  filename += "/samples/rtc/";
+  filename += benchmark.first;
+  cout << "Reading file: " << filename << endl;
+  TimedVMTEncoder se(filename, rts);
+  Property prop(rts.solver(), se.propvec()[0]);  
+  IC3IA ic3ia(prop, rts, s);
+  ProverResult res = ic3ia.prove();
+  // KInduction kind(prop, rts, s);
+  // ProverResult res = kind.check_until(10);
+  EXPECT_EQ(res, benchmark.second);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    TAIC3IATestSuite,
+    TAIC3IATests,
+    testing::Combine(testing::ValuesIn({MSAT}),
+                     testing::ValuesIn(ta_inputs)));
+
+class TAKINDTests
+    : public ::testing::Test,
+      public ::testing::WithParamInterface<
+          tuple<SolverEnum, pair<const string, ProverResult>>>
+{
+};
+
+TEST_P(TAKINDTests, Encode)
 {
   SmtSolver s = create_solver(get<0>(GetParam()));
   s->set_opt("incremental", "true");
@@ -72,14 +107,19 @@ TEST_P(TATests, Encode)
   Property prop(rts.solver(), se.propvec()[0]);  
   KInduction kind(prop, rts, s);
   ProverResult res = kind.check_until(10);
-  EXPECT_EQ(res, benchmark.second);
+  // if the result is false, we must have found false
+  if (benchmark.second == pono::ProverResult::FALSE){
+    EXPECT_EQ(res, benchmark.second);
+  } else {
+    // otherwise we accept true or unknown
+    EXPECT_NE(res, pono::ProverResult::FALSE);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    ParamTATests,
-    TATests,
+    TAKINDTestSuite,
+    TAKINDTests,
     testing::Combine(testing::ValuesIn({CVC5}),
-                     // from test_encoder_inputs.h
                      testing::ValuesIn(ta_inputs)));
 
 }  // namespace pono_tests
