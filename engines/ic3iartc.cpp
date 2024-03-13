@@ -86,7 +86,7 @@ void IC3IARTC::reconstruct_trace(const ProofGoal * pg, TermVec & out)
  * and return a current-state version of that assignment.
  *
  * TODO: do we want an assignment on concrete states or predicates?
- */
+//  */
 // Term IC3IARTC::get_nextstate_model() const
 // {
 //   TermVec conjuncts;

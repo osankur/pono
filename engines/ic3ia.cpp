@@ -283,7 +283,6 @@ RefineResult IC3IA::refine()
     formulae.push_back(to_interpolator_.transfer_term(t, BOOL));
   }
   logger.log(1, "Getting seq interpolant for formulae:");
-  std::cout << "Getting formulae:\n";
   for (auto f : formulae) {
     std::cout << f << "\n";
   }

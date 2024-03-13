@@ -17,6 +17,10 @@ enum TimedAutomatonEncoding
  * and urgent location formulas read. Then, encode_timed_automaton_delays builds
  * the full transition relation including delays, and respecting location invariants and urgency.
  * 
+ * There are two possible semantics:
+ * - non-compact delays: each transition is either a delay, or a discrete step
+ * - compact delays: each transition is a discrete step followed by a delay
+ * 
  * @see TimedVMTEncoder
 */
 class TimedTransitionSystem : public RelationalTransitionSystem {
@@ -108,7 +112,7 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
     smt::Term locinvar_;
     smt::Term urgent_;
     smt::Term delta_;
-    // smt::Term dummy_init_bit_;
+
     bool encoded_delays_;
     bool has_dummy_init_transitions_;
 };

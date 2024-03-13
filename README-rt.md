@@ -7,6 +7,8 @@ This fork contains an extension of Pono for real-time:
 Currently, this is supported within the engines BMC, IND, and the new engine IC3IARTC
 which is an adaptation of IC3IA.
 
+Note that recent versions of Mathsat are not currently compatible with Pono. Please use version 5.6.4
+
 ## Timed Automata
 Timed automata are encoded in the [VMT](https://vmt-lib.fbk.eu/) format. In addition to
 a regular VMT file, the input file specifies clocks (any variable for which the attribute `:nextclock` is used is a clock),
@@ -47,7 +49,7 @@ Note that the BMC answers Unknown above since it can only detect counterexamples
 
 On an rt-inconsistent input, a witness can be displayed with the `--witness` option:
 
-    ./pono -e bmc --smt-solver cvc5 --rt-consistency --witness ../samples/rtc/sample_consistent.smv
+    ./pono -e bmc --smt-solver cvc5 --rt-consistency --witness ../samples/rtc/sample_inconsistent.smv
 
 Note that the IC3 algorithms do not currently have witness generation.
 

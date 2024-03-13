@@ -116,7 +116,6 @@ class QuantifierTests
   Sort boolsort, bvsort8, intsort;
 };
 
-
 ProverResult check_prop(PonoOptions pono_options,
                         Term & prop,
                         TransitionSystem & ts,

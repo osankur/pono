@@ -243,6 +243,10 @@ void get_predicates(const SmtSolver & solver,
         continue;
       }
 
+      if (t->get_op() == smt::Forall || t->get_op() == smt::Exists){
+        // skip quantified formulas
+        continue;
+      }
       if (t->is_value()) {
         // values are not predicates
         continue;

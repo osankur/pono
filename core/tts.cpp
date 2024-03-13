@@ -6,7 +6,6 @@
 using namespace smt;
 namespace pono {
 const std::string TimedTransitionSystem::DELAY_VAR_NAME = "#DELTA";
-// const std::string TimedTransitionSystem::DUMMY_INIT_VAR_NAME = "#INIT";
 
 void TimedTransitionSystem::encode_timed_automaton_delays(
     const TimedAutomatonEncoding & encoding)
@@ -18,15 +17,13 @@ void TimedTransitionSystem::encode_timed_automaton_delays(
       encode_compact_delays();
       break;
     default:
-      assert(false);
+      throw std::runtime_error("Non-compact delays are not yet implemented");
   }
 }
 
 void TimedTransitionSystem::add_dummy_init_transitions(){
   assert(!this->has_dummy_init_transitions_);
   this->has_dummy_init_transitions_ = true;
-  // smt::Sort realsort = solver_->make_sort(REAL);
-  // dummy_init_bit_ = TransitionSystem::make_statevar(DELAY_VAR_NAME, realsort);
 
   smt::Term dummy_transition = solver_->make_term(true);  
   for (auto v : statevars_) {
@@ -53,7 +50,6 @@ void TimedTransitionSystem::encode_compact_delays(){
      * /\ (trans(C,X,I,C'-delta,X')
      * /\ locinvar(X',C')
      */
-  // smt::Term zero = solver_->make_term((int64_t)0, realsort);
   smt::Term zero = solver_->make_term("0", realsort);
   smt::Term clocks_nonnegative = solver_->make_term(true);
   smt::Term clocks_are_zero = solver_->make_term(true);
