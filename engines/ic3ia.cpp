@@ -34,7 +34,7 @@
 #include "smt/available_solvers.h"
 #include "utils/logger.h"
 #include "utils/term_analysis.h"
-
+#include "smt/opensmt_interpolator.h"
 using namespace smt;
 using namespace std;
 
@@ -168,6 +168,7 @@ void IC3IA::initialize()
   // NOTE: abstract is called automatically in IC3Base initialize
   UnorderedTermSet preds;
   
+  std::cout <<"Getting predicates for: " << conc_ts_.init() << "\n";
   get_predicates(solver_, conc_ts_.init(), preds, false, false, true);
   size_t num_init_preds = preds.size();
   size_t num_prop_preds = 0;
@@ -286,17 +287,18 @@ RefineResult IC3IA::refine()
   for (auto f : formulae) {
     std::cout << f << "\n";
   }
-  // interpolator_->reset_assertions();
-  // std::cout << interpolator_->get_solver_enum() << "\n";
-  // std::cout << "Asking for sequence interpolant:\n";
-  // interpolator_->dump_smt2("/tmp/a.smt");
 
-  // for (auto f : formulae){
-  //   std::cout << f << "\n";
-  // }
   TermVec out_interpolants;
-  Result r =
+  Result r = smt::ResultType::UNKNOWN;
+  std::cout << "use opensmt: " << options_.use_opensmt_rtc_interpolator_ << "\n";
+  if (options_.use_opensmt_rtc_interpolator_){
+    OpenSMTInterpolator o(interpolator_);
+    r = o.get_sequence_interpolants(formulae, out_interpolants);
+  } else {
+    r =
       interpolator_->get_sequence_interpolants(formulae, out_interpolants);
+  }
+
 
   if (r.is_sat()) {
     // this is a real counterexample, so the property is false

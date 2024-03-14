@@ -3,6 +3,7 @@
 
 #include "engines/ic3ia.h"
 #include "smt-switch/utils.h"
+#include "smt/opensmt_interpolator.h"
 
 namespace pono {
 
@@ -23,9 +24,11 @@ class IC3IARTC : public IC3IA
 
   typedef IC3IA super;
   void reconstruct_trace(const ProofGoal * pg, smt::TermVec & out) override;
-  // smt::Term get_nextstate_model() const;
-  // void initialize();
+  RefineResult refine() override;
 
+  private:
+  bool use_opensmt_interpolator_;
+  OpenSMTInterpolator openSMTInterpolator_;
 };
 
 }
