@@ -4,8 +4,7 @@ This fork contains an extension of Pono for real-time:
 - Algorithms to check rt-consistency which means checking whether `AX not prop` is reachable.
 (The system is rt-consistent if no such state is reachable).
 
-Currently, this is supported within the engines BMC, IND, and the new engine IC3IARTC
-which is an adaptation of IC3IA.
+Currently, this is supported within the engines BMC, IND, IC3IA via a small variant supporting quantified properties and custom interpolators.
 
 Note that recent versions of Mathsat are not currently compatible with Pono. Please use version 5.6.4
 

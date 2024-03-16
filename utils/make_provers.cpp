@@ -46,7 +46,7 @@ vector<Engine> all_engines()
            #ifdef WITH_MSAT
            INTERP,
            IC3IA_ENGINE,
-           IC3IARTC_ENGINE,
+           IC3IAQ_ENGINE,
            #endif
            IC3SA_ENGINE
   };
@@ -76,16 +76,20 @@ shared_ptr<Prover> make_prover(Engine e,
   } else if (e == IC3_BITS) {
     return make_shared<IC3Bits>(p, ts, slv, opts);
   } else if (e == IC3IA_ENGINE) {
+    bool with_msat = false;
 #ifdef WITH_MSAT
+  with_msat = true;
+#endif 
+  if (with_msat || opts.use_external_opensmt_interpolator_){
     if (opts.rtconsistency_){
-      return make_shared<IC3IARTC>(p, ts, slv, opts);
+      return make_shared<IC3IAQ>(p, ts, slv, opts);
     } else {
       return make_shared<IC3IA>(p, ts, slv, opts);
-    }
-#else
+    }    
+  } else {
     throw PonoException(
-        "IC3IA uses MathSAT for interpolants, but not built with MathSAT");
-#endif
+        "IC3IA uses MathSAT or external interpolator OpenSMT for interpolants, but not built with MathSAT");
+  }
 #ifdef WITH_MSAT_IC3IA
   } else if (e == MSAT_IC3IA) {
     return make_shared<MsatIC3IA>(p, ts, slv, opts);
@@ -94,8 +98,8 @@ shared_ptr<Prover> make_prover(Engine e,
     return make_shared<IC3SA>(p, ts, slv, opts);
   } else if (e == SYGUS_PDR) {
     return make_shared<SygusPdr>(p, ts, slv, opts);
-  } else if ( e == IC3IARTC_ENGINE){
-    return make_shared<IC3IARTC>(p, ts, slv, opts);
+  } else if ( e == IC3IAQ_ENGINE){
+    return make_shared<IC3IAQ>(p, ts, slv, opts);
   }else {
     throw PonoException("Unhandled engine");
   }

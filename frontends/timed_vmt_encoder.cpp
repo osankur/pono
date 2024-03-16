@@ -47,7 +47,6 @@ void TimedVMTEncoder::term_attribute(const Term & term,
                                      const string & keyword,
                                      const string & value)
 {
-  // std::cout << "term: " << term << "\nkeyword: " << keyword << "\nvalue: " << value << "\n\n";
   if (keyword == "next") {
     Term next_var = lookup_symbol(value);
     if (!next_var) {

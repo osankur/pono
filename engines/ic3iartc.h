@@ -3,7 +3,7 @@
 
 #include "engines/ic3ia.h"
 #include "smt-switch/utils.h"
-#include "smt/opensmt_interpolator.h"
+#include "smt/external_interpolator.h"
 
 namespace pono {
 
@@ -12,23 +12,23 @@ namespace pono {
  * Real variables are assumed to be timed automata clocks, and delay transitions
  * are added.
 */
-class IC3IARTC : public IC3IA
+class IC3IAQ : public IC3IA
 {
  public:
-    IC3IARTC(const Property & p,
+    IC3IAQ(const Property & p,
         const TransitionSystem & ts,
         const smt::SmtSolver & s,
         PonoOptions opt = PonoOptions());
 
-  virtual ~IC3IARTC() {}
+  virtual ~IC3IAQ() {}
 
   typedef IC3IA super;
   void reconstruct_trace(const ProofGoal * pg, smt::TermVec & out) override;
   RefineResult refine() override;
 
   private:
-  bool use_opensmt_interpolator_;
-  OpenSMTInterpolator openSMTInterpolator_;
+  bool use_external_interpolator_;
+  ExternalInterpolator external_interpolator_;
 };
 
 }

@@ -94,7 +94,7 @@ enum optionIndex
   KIND_BOUND_STEP,
   RT_CONSISTENCY,
   TIMED_AUTOMATON,
-  USE_OPENSMT_RTC_INTERPOLATOR
+  USE_EXTERNAL_OPENSMT_INTERPOLATOR
 };
 
 struct Arg : public option::Arg
@@ -604,12 +604,12 @@ const option::Descriptor usage[] = {
     Arg::None,
     "  --timed-automaton, -ta \tinterpret the input file as a timed automaton"
     },
-  { USE_OPENSMT_RTC_INTERPOLATOR,
+  { USE_EXTERNAL_OPENSMT_INTERPOLATOR,
     0,
     "opensmt",
-    "use-opensmt-rtc-interpolator",
+    "use-external-opensmt-interpolator",
     Arg::None,
-    "  --use-opensmt-rtc-interpolator, -opensmt \tuse light-weight interface to OpenSMT for interpolation. Only valid for the ic3iartc engine. "
+    "  --use-external-opensmt-interpolator, -opensmt \tuse light-weight interface to OpenSMT for interpolation. Only valid for the ic3iartc engine. "
     },    
   { INTERPOLATOR,
     0,
@@ -816,7 +816,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
 	  break;
         case RT_CONSISTENCY: rtconsistency_ = true; break;
         case TIMED_AUTOMATON: timed_automaton_ = true; break;
-        case USE_OPENSMT_RTC_INTERPOLATOR: use_opensmt_rtc_interpolator_ = true; break;
+        case USE_EXTERNAL_OPENSMT_INTERPOLATOR: use_external_opensmt_interpolator_ = true; break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL
           // which aborts the parse with an error
@@ -908,7 +908,7 @@ string to_string(Engine e)
       res = "sygus-pdr";
       break;
     }
-    case IC3IARTC_ENGINE:{
+    case IC3IAQ_ENGINE:{
       res = "ic3ia-rtc";
       break;
     }

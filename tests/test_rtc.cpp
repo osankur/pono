@@ -54,13 +54,13 @@ TEST_P(RTCTests, Encode)
     VMTEncoder se(filename, rts);
     Property plain_prop = Property(rts.solver(), se.propvec()[0]);
     Property prop = get_rt_consistency_property(plain_prop, rts);
-    IC3IARTC ic3iartc(prop, rts, s);
+    IC3IAQ ic3iartc(prop, rts, s);
     res = ic3iartc.prove();
   } else if (filename.find(".smv") != filename.npos) {
     SMVEncoder se(filename, rts);
     Property plain_prop(rts.solver(), se.propvec()[0]);  
     Property prop = get_rt_consistency_property(plain_prop, rts);
-    IC3IARTC ic3iartc(prop, rts, s);
+    IC3IAQ ic3iartc(prop, rts, s);
     res = ic3iartc.prove();
   }
   EXPECT_EQ(res, benchmark.second);

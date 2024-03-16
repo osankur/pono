@@ -96,7 +96,7 @@ class QuantifierTests
     Property p(rts.solver(), wit);
 
     PonoOptions po;
-    IC3IARTC ic3ia(p, rts, s, po );
+    IC3IAQ ic3ia(p, rts, s, po );
     ProverResult r = ic3ia.prove();
     std::cout << "Result: " << r << "\n";
 

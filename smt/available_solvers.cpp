@@ -118,7 +118,7 @@ SmtSolver create_solver_for(SolverEnum se,
     // IC3SA requires a full model
     full_model = true;
   }
-  if (e == IC3IARTC_ENGINE) {
+  if (e == IC3IAQ_ENGINE) {
     se = CVC5;
   }
   if (se != MSAT) {
@@ -217,7 +217,7 @@ SmtSolver create_interpolating_solver_for(SolverEnum se, Engine e)
     case CVC5_INTERPOLATOR:
     case CVC5:
       return Cvc5SolverFactory::create_interpolating_solver();
-#if WITH_MSAT
+#if WITH_MSAT 
       // for convenience -- accept any MSAT SolverEnum
     case MSAT:
     case MSAT_INTERPOLATOR: {

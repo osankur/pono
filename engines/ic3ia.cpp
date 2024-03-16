@@ -34,7 +34,7 @@
 #include "smt/available_solvers.h"
 #include "utils/logger.h"
 #include "utils/term_analysis.h"
-#include "smt/opensmt_interpolator.h"
+#include "smt/external_interpolator.h"
 using namespace smt;
 using namespace std;
 
@@ -49,11 +49,7 @@ IC3IA::IC3IA(const Property & p,
       ia_(conc_ts_, ts_, unroller_),
       // only mathsat interpolator supported
       interpolator_(create_interpolating_solver_for(
-      opt.interpolator_, Engine::IC3IA_ENGINE)),
-      // interpolator_(create_interpolating_solver_for(
-      //     s->get_solver_enum(), Engine::IC3IA_ENGINE)),
-      // interpolator_(create_interpolating_solver_for(
-      //     SolverEnum::MSAT_INTERPOLATOR, Engine::IC3IA_ENGINE)),
+      s->get_solver_enum(), Engine::IC3IA_ENGINE)),
       to_interpolator_(interpolator_),
       to_solver_(solver_),
       longest_cex_length_(0)
@@ -63,8 +59,8 @@ IC3IA::IC3IA(const Property & p,
   orig_ts_ = ts;
   engine_ = Engine::IC3IA_ENGINE;
   approx_pregen_ = true;
-  std::cout << "Solver: " << s->get_solver_enum() << " Interpolator: "
-    << this->interpolator_->get_solver_enum() << "\n";
+  logger.log(2, "Solver: " + s->get_solver_enum());
+  logger.log(2, "Interpolator: " + this->interpolator_->get_solver_enum());
 }
 
 void IC3IA::add_important_var(Term v)
@@ -168,7 +164,6 @@ void IC3IA::initialize()
   // NOTE: abstract is called automatically in IC3Base initialize
   UnorderedTermSet preds;
   
-  std::cout <<"Getting predicates for: " << conc_ts_.init() << "\n";
   get_predicates(solver_, conc_ts_.init(), preds, false, false, true);
   size_t num_init_preds = preds.size();
   size_t num_prop_preds = 0;
@@ -283,16 +278,12 @@ RefineResult IC3IA::refine()
     // std::cout << "Transferring " << t->to_string() << "\n";
     formulae.push_back(to_interpolator_.transfer_term(t, BOOL));
   }
-  logger.log(1, "Getting seq interpolant for formulae:");
-  for (auto f : formulae) {
-    std::cout << f << "\n";
-  }
 
   TermVec out_interpolants;
   Result r = smt::ResultType::UNKNOWN;
-  std::cout << "use opensmt: " << options_.use_opensmt_rtc_interpolator_ << "\n";
-  if (options_.use_opensmt_rtc_interpolator_){
-    OpenSMTInterpolator o(interpolator_);
+
+  if (options_.use_external_opensmt_interpolator_){
+    ExternalInterpolator o(interpolator_);
     r = o.get_sequence_interpolants(formulae, out_interpolants);
   } else {
     r =

@@ -40,7 +40,7 @@ enum Engine
   MSAT_IC3IA,
   IC3SA_ENGINE,
   SYGUS_PDR,
-  IC3IARTC_ENGINE
+  IC3IAQ_ENGINE
   // NOTE: if adding an IC3 variant,
   // make sure to update ic3_variants_set in options/options.cpp
   // used for setting solver options appropriately
@@ -67,7 +67,7 @@ const std::unordered_map<std::string, Engine> str2engine(
       { "msat-ic3ia", MSAT_IC3IA },
       { "ic3sa", IC3SA_ENGINE },
       { "sygus-pdr", SYGUS_PDR },
-      { "ic3ia-rtc", IC3IARTC_ENGINE } });
+      { "ic3ia-rtc", IC3IAQ_ENGINE } });
 
 // SyGuS mode option
 enum SyGuSTermMode{
@@ -154,7 +154,7 @@ class PonoOptions
         kind_bound_step_(default_kind_bound_step_),
         rtconsistency_(default_rt_consistency_),
         timed_automaton_(default_timed_automaton_),
-        use_opensmt_rtc_interpolator_(use_opensmt_rtc_interpolator_),
+        use_external_opensmt_interpolator_(default_use_external_opensmt_interpolator_),
         interpolator_(default_interpolator_)
   {
   }
@@ -192,8 +192,8 @@ class PonoOptions
   std::string clock_name_;
   std::string filename_;
   smt::SolverEnum smt_solver_;  ///< underlying smt solver
-  smt::SolverEnum interpolator_;  ///< interpolator used by IC3IA and IC3IARTC
-  bool use_opensmt_rtc_interpolator_;  
+  smt::SolverEnum interpolator_;  ///< interpolator used by IC3IA and IC3IAQ
+  bool use_external_opensmt_interpolator_;  
   bool logging_smt_solver_;
   bool static_coi_;
   bool show_invar_;   ///< display invariant when running from command line
@@ -370,7 +370,7 @@ private:
   static const unsigned default_kind_bound_step_ = 1;
   static const bool default_rt_consistency_ = false;
   static const bool default_timed_automaton_ = false;
-  static const bool default_use_opensmt_rtc_interpolator_ = true;
+  static const bool default_use_external_opensmt_interpolator_ = false;
   static const smt::SolverEnum default_interpolator_ = smt::MSAT;
 };
 

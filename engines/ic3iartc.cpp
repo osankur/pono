@@ -1,5 +1,5 @@
 /*********************                                                  */
-/*! \file IC3IARTC.cpp
+/*! \file IC3IAQ.cpp
 ** \brief IC3IA applied to rt-consistency checking.
 ** \author Ocan Sankur <ocan.sankur@cnrs.fr>
 **
@@ -10,7 +10,7 @@
 #include <random>
 
 #include "smt/available_solvers.h"
-#include "smt/opensmt_interpolator.h"
+#include "smt/external_interpolator.h"
 #include "utils/logger.h"
 #include "utils/term_analysis.h"
 
@@ -19,14 +19,15 @@ using namespace std;
 
 namespace pono {
 
-IC3IARTC::IC3IARTC(const Property & p,
+IC3IAQ::IC3IAQ(const Property & p,
                    const TransitionSystem & ts,
                    const SmtSolver & s,
                    PonoOptions opt
                    )
-    : IC3IA(p, ts, s, opt), openSMTInterpolator_(interpolator_), use_opensmt_interpolator_(opt.use_opensmt_rtc_interpolator_)
+    : IC3IA(p, ts, s, opt), external_interpolator_(interpolator_), use_external_interpolator_(opt.use_external_opensmt_interpolator_)
 {
-  logger.log(1, "Engine: IC3IARTC");
+  logger.log(1, "Engine: IC3IAQ");
+  engine_ = Engine::IC3IAQ_ENGINE;
   assert(ts_.solver() == orig_property_.solver());
 }
 
@@ -36,14 +37,14 @@ IC3IARTC::IC3IARTC(const Property & p,
  * state that is reachable from the penultimate step. This helps us avoid having
  * a quantified formula in the trace.
  */
-void IC3IARTC::reconstruct_trace(const ProofGoal * pg, TermVec & out)
+void IC3IAQ::reconstruct_trace(const ProofGoal * pg, TermVec & out)
 {
   assert(!solver_context_);
   assert(pg);
   assert(pg->target.term);
   assert(check_intersects_initial(pg->target.term));
 
-  logger.log(2, "IC3IARTC::reconstruct_trace\n");
+  logger.log(2, "IC3IAQ::reconstruct_trace\n");
   out.clear();
   while (pg) {
     out.push_back(pg->target.term);
@@ -81,12 +82,12 @@ void IC3IARTC::reconstruct_trace(const ProofGoal * pg, TermVec & out)
 
 /**
  * This is a copy of the IC3IA::refine function which can call an alternative interpolator.
- * We keep this as a copy here in order not to minimize modifications to the core of Pono,
+ * We keep this as a copy here in order to minimize modifications to the core of Pono,
  * and because we have, for now, light-weight interfaces to alternative interpolators.
 */
-RefineResult IC3IARTC::refine()
+RefineResult IC3IAQ::refine()
 {
-  logger.log(1, "\nIC3IARTC::Refinemenent with {} steps", cex_.size());
+  logger.log(1, "\nIC3IAQ::Refinemenent with {} steps", cex_.size());
   // counterexample trace should have been populated
   assert(cex_.size());
   if (cex_.size() == 1) {
@@ -99,7 +100,7 @@ RefineResult IC3IARTC::refine()
 
   // use interpolator to get predicates
   // remember -- need to transfer between solvers
-  assert(interpolator_ || use_opensmt_interpolator_);
+  assert(interpolator_ || use_external_interpolator_);
 
   TermVec formulae;
   for (size_t i = 0; i < cex_length; ++i) {
@@ -127,9 +128,9 @@ RefineResult IC3IARTC::refine()
   // }
   TermVec out_interpolants;
   Result r = smt::ResultType::UNKNOWN;
-  std::cout << "use opensmt: " << use_opensmt_interpolator_ << "\n";
-  if (use_opensmt_interpolator_){
-    r = openSMTInterpolator_.get_sequence_interpolants(formulae, out_interpolants);
+  std::cout << "use opensmt: " << use_external_interpolator_ << "\n";
+  if (use_external_interpolator_){
+    r = external_interpolator_.get_sequence_interpolants(formulae, out_interpolants);
   } else {
     r =
       interpolator_->get_sequence_interpolants(formulae, out_interpolants);
