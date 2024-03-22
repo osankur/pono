@@ -194,7 +194,29 @@ ProverResult IC3Base::check_until(int k)
 
 bool IC3Base::witness(std::vector<smt::UnorderedTermMap> & out)
 {
-  throw PonoException("IC3 witness NYI");
+  assert(cex_.size());
+  push_solver_context();
+  for (size_t i = 0; i < cex_.size(); ++i) {
+    Term t = unroller_.at_time(cex_[i], i);
+    if (i + 1 < cex_.size()) {
+      t = solver_->make_term(And, t, unroller_.at_time(ts_.trans(), i));
+    }
+    solver_->assert_formula(t);
+  }
+  Result r = solver_->check_sat();
+  assert(r.is_sat());
+  for (size_t i = 0; i < cex_.size(); ++i) {
+    smt::UnorderedTermMap s;
+    for (auto v : ts_.statevars()){
+      s[v] = solver_->get_value(unroller_.at_time(v, i));
+    }
+    for (auto v : ts_.inputvars()){
+      s[v] = solver_->get_value(unroller_.at_time(v, i));
+    }
+    out.push_back(s);
+  }
+  pop_solver_context();
+  return true;
 }
 
 size_t IC3Base::witness_length() const

@@ -49,7 +49,7 @@ IC3IA::IC3IA(const Property & p,
       ia_(conc_ts_, ts_, unroller_),
       // only mathsat interpolator supported
       interpolator_(create_interpolating_solver_for(
-      s->get_solver_enum(), Engine::IC3IA_ENGINE)),
+      opt.interpolator_, Engine::IC3IA_ENGINE)),
       to_interpolator_(interpolator_),
       to_solver_(solver_),
       longest_cex_length_(0)
@@ -59,8 +59,6 @@ IC3IA::IC3IA(const Property & p,
   orig_ts_ = ts;
   engine_ = Engine::IC3IA_ENGINE;
   approx_pregen_ = true;
-  logger.log(2, "Solver: " + s->get_solver_enum());
-  logger.log(2, "Interpolator: " + this->interpolator_->get_solver_enum());
 }
 
 void IC3IA::add_important_var(Term v)
@@ -103,7 +101,7 @@ Term IC3IA::get_nextstate_model() const
   conjuncts.reserve(predlbls_.size());
   Term val;
   for (const auto & p : predlbls_) {    
-    if ((val = solver_->get_value(ts_.next(p))) == solver_true_) {
+    if ((val = solver_->get_value(ts_.next(lbl2pred_.at(p)))) == solver_true_) {
       conjuncts.push_back(lbl2pred_.at(p));
     } else {
       conjuncts.push_back(solver_->make_term(Not, lbl2pred_.at(p)));
@@ -289,7 +287,6 @@ RefineResult IC3IA::refine()
     r =
       interpolator_->get_sequence_interpolants(formulae, out_interpolants);
   }
-
 
   if (r.is_sat()) {
     // this is a real counterexample, so the property is false
@@ -507,5 +504,33 @@ void IC3IA::register_symbol_mappings(size_t i)
     cache[to_interpolator_.transfer_term(unrolled_sv)] = unrolled_sv;
   }
 }
+
+bool IC3IA::witness(std::vector<smt::UnorderedTermMap> & out)
+{
+  assert(cex_.size());
+  push_solver_context();
+  for (size_t i = 0; i < cex_.size(); ++i) {
+    Term t = unroller_.at_time(cex_[i], i);
+    if (i + 1 < cex_.size()) {
+      t = solver_->make_term(And, t, unroller_.at_time(conc_ts_.trans(), i));
+    }
+    solver_->assert_formula(t);
+  }
+  Result r = solver_->check_sat();
+  assert(r.is_sat());
+  for (size_t i = 0; i < cex_.size(); ++i) {
+    smt::UnorderedTermMap s;
+    for (auto v : conc_ts_.statevars()){
+      s[v] = solver_->get_value(unroller_.at_time(v, i));
+    }
+    for (auto v : conc_ts_.inputvars()){
+      s[v] = solver_->get_value(unroller_.at_time(v, i));
+    }
+    out.push_back(s);
+  }
+  pop_solver_context();
+  return true;
+}
+
 
 }  // namespace pono
