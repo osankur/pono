@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "options/options.h"
+#include "frontends/vmt_encoder.h"
 #include "smt-switch/smt.h"
 #include "smt-switch/smtlib_reader.h"
 #include "smt/available_solvers.h"
@@ -13,7 +14,8 @@
 namespace pono{
 
 enum ExternalInterpolatorEnum {
-  OpenSMT
+  OpenSMT,
+  SMTInterpol
 };
 
 /**
@@ -37,14 +39,18 @@ class ExternalInterpolator {
   std::string executable(){
     switch(externalInterpolator_){
       case OpenSMT: return "opensmt";
+      case SMTInterpol:
+        return "java -jar ~/Downloads/smtinterpol-2.5-1256-g55d6ba76.jar -no-success -w -q ";
       default: std::runtime_error("unknown external interpolator");
+      return "";
     }
   }
 
   private:
     class InterpolantReader : public smt::SmtLibReader {
       public:
-      InterpolantReader(std::string filename, smt::SmtSolver solver) : smt::SmtLibReader(solver), interpolant_(nullptr){        
+      InterpolantReader(std::string filename, smt::SmtSolver solver) : smt::SmtLibReader(solver), interpolant_(nullptr){
+        set_logic_all();
         int res = parse(filename);
         assert(!res);  // 0 means success
       }
@@ -56,6 +62,7 @@ class ExternalInterpolator {
           this->interpolant_ = term;
         }   
       }
+      void new_symbol(const std::string & name, const smt::Sort & sort){}
       smt::Term get_interpolant(){
         assert(interpolant_);
         return interpolant_;
@@ -66,6 +73,7 @@ class ExternalInterpolator {
 
     // Prepare the smt query by replacing (to_real N) -> N
     std::string remove_to_real(std::string query);
+    std::string insert_to_real(std::string query);
     // Replace -N -> (- N)
     std::string clean_negative_numbers(std::string query);
     /** 

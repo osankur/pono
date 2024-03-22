@@ -17,50 +17,82 @@
 namespace pono{
 
 std::string ExternalInterpolator::clean_negative_numbers(std::string query) {
-  std::regex negnumber(".*(-([0-9]+)).*");
-  std::smatch matches;
-  while(std::regex_search(query, matches, negnumber)){
-    assert(matches.size() >= 3);
-    std::string whole_number = matches[1].str(); // the whole -N string
-    std::string inside_of_number = matches[2].str(); // just N
-    // std::cout << "whole number: " << whole_number << "\n";
-    // std::cout << "just number: " << inside_of_number << "\n";
-    std::regex whole_number_reg(whole_number);
-    query = std::regex_replace(query, whole_number_reg, "(- " + inside_of_number +")");
-    // std::cout << "replaced: " << query << "\n";
-    // exit(0);
+  // sed -r 's/-([0-9]+)/(- \1)/g'
+  // std::regex negnumber(".*(-([0-9]+)).*");
+  // std::smatch matches;
+  // while(std::regex_search(query, matches, negnumber)){
+  //   assert(matches.size() >= 3);
+  //   std::string whole_number = matches[1].str(); // the whole -N string
+  //   std::string inside_of_number = matches[2].str(); // just N
+  //   std::regex whole_number_reg(whole_number);
+  //   query = std::regex_replace(query, whole_number_reg, "(- " + inside_of_number +")");
+  // }
+  std::string result;
+  std::array<char, 128> buffer;
+
+  std::string tmpfilename = std::tmpnam(nullptr);
+  std::ofstream outfile(tmpfilename);
+  outfile << query;
+  outfile.close();
+
+  std::string cmd = "sed -r 's/-([0-9]+)/(- \\1)/g' " + tmpfilename;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  if (!pipe) {
+      throw std::runtime_error("popen() failed!");
   }
-  return query;
+  while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
+      result += buffer.data();
+  }
+  return result;
 }
 
 std::string ExternalInterpolator::remove_to_real(std::string query) {
   // terms output by smt-switch contain expressions (to_real N)
   // which are used to convert integers to reals but these are not accepted by opensmt in QF_LRA.
   // we will get rid of these, as well as the negative form e.g. (to_real (- 1)).
-  std::string s = query;
-  std::regex to_real_regex(".*(\\(to_real (\\(?[ \\-0-9]+\\)?)\\)).*");
-  std::smatch matches;
-  while(std::regex_search(s, matches, to_real_regex)){
-    assert(matches.size() >= 3);
-    std::string to_real_n = matches[1].str(); // the whole (to_real *) string
-    // replace ( by \\(, and ) by \\)
-    std::string::size_type pos = 0u;
-    while((pos = to_real_n.find("(", pos)) != std::string::npos){
-      to_real_n.replace(pos, 1, "\\(");
-      pos += 2;
-    }
-    pos = 0u;
-    while((pos = to_real_n.find(")", pos)) != std::string::npos){
-      to_real_n.replace(pos, 1, "\\)");
-      pos += 2;
-    }
+  // remove (to_real *) for nonnegative numbers:
+  //   sed -r 's/\(to_real\s*([0-9]*)\)/\1/g'
+  // remove them for negative numbers:
+  //   sed -r 's/\(to_real (\([- 0-9]*\))\)/\1/g'
+  std::string result;
+  std::array<char, 128> buffer;
 
-    std::regex to_real_n_re(to_real_n);
-    std::string n = matches[2].str(); // the number inside, possibly with a minus
-    s = std::regex_replace(s, to_real_n_re, n);
+  std::string tmpfilename = std::tmpnam(nullptr);
+  std::ofstream outfile(tmpfilename);
+  outfile << query;
+  outfile.close();
+
+  std::string cmd = "sed -r 's/\\(to_real\\s*([0-9]*)\\)/\\1/g' " + tmpfilename + "| sed -r 's/\\(to_real (\\([- 0-9]*\\))\\)/\\1/g' ";
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  if (!pipe) {
+      throw std::runtime_error("popen() failed!");
   }
-  return s;
+  while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
+      result += buffer.data();
+  }
+  return result;
 }
+
+std::string ExternalInterpolator::insert_to_real(std::string query) {
+  std::string result;
+  std::array<char, 128> buffer;
+
+  std::string tmpfilename = std::tmpnam(nullptr);
+  std::ofstream outfile(tmpfilename);
+  outfile << query;
+  outfile.close();
+
+  std::string cmd = "sed -r 's/ ([0-9]+)/ (to_real \\1)/g' " + tmpfilename;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  if (!pipe) {
+      throw std::runtime_error("popen() failed!");
+  }
+  while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
+      result += buffer.data();
+  }
+  return result;
+}
+
 
 smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::UnorderedTermSet & symbols, smt::TermVec & outInterpolants) {
   // write query to file
@@ -70,6 +102,8 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
   outfile << query;
   outfile.close();
   logger.log(2, "Wrote seq interpolant query to file: " + smt2filename);
+  std::cout.flush();
+  std::cerr.flush();
   std::array<char, 128> buffer;
   std::string result;
   std::string cmd = executable() + " " + smt2filename;
@@ -102,7 +136,7 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
     auto first_open_par = result.find_first_of("(");
     auto last_close_par = result.find_last_of(")");
     result = result.substr(first_open_par+1, last_close_par-first_open_par-1);
-    std::cout << "Extracted interp: " << result << "\n";
+    // std::cout << "Extracted interp: " << result << "\n";
 
     // split to lines (the stdlib has no function to do this ;-( ), and discard interpolants that are false or true
     std::string delimiter = "\n";
@@ -112,9 +146,9 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
       std::string token = result.substr(0, pos);
       if (token.find("false") == token.npos && token.find("true") == token.npos){
         interpolants.push_back(token);
-        std::cout << "adding interp: " << token << "\n";
+        // std::cout << "adding interp: " << token << "\n";
       } else {
-        std::cout << "ignoring: " << token << "\n";
+        // std::cout << "ignoring: " << token << "\n";
       }
       result.erase(0, pos + delimiter.length());
     }
@@ -136,23 +170,34 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
       ss << ")\n";
       result = ss.str();
     }
-    std::cout << "combined interpolant: " << result << "\n";
+    // std::cout << "combined interpolant: " << result << "\n";
 
     // and by putting the formula in a define-fun with attribute interpolant as follows
     //     (define-fun inter() Bool (! FORMULA :interpolant true))
     result = "(define-fun inter() Bool (! " + result + " :interpolant true))";
+    // result = "(define-fun inter() Bool (! " + result + " :trans true))";
     std::string tmpfilename = std::tmpnam(nullptr) + std::string(".smt2");
     std::ofstream outfile(tmpfilename);
-    outfile << "(set-logic QF_LRA)\n";
+    // outfile << "(set-logic QF_LRA)\n";
     for (auto f : symbols){
       outfile << "(declare-fun " << f << " () " << f->get_sort() << ")\n";
     }
-    outfile << result << "\n";
+    // insert back to_real around all integers otherwise Pono's parser will assume these are of bitvector sort
+    outfile << insert_to_real(result) << "\n";
     outfile.close();
     logger.log(2, "Wrote interpolant to file: " + tmpfilename);
+
+    // ExternalInterpolator::InterpolantReader interpolant_reader(tmpfilename, original_interpolator_);
+    // smt::Term conjunctive = interpolant_reader.get_interpolant();
+
     ExternalInterpolator::InterpolantReader interpolant_reader(tmpfilename, solver_);
     logger.log(2, ("parsed interpolant: " + interpolant_reader.get_interpolant()->to_string()));
     smt::Term conjunctive = to_original_interpolator_.transfer_term(interpolant_reader.get_interpolant());
+    logger.log(2, ("transferred interpolant: "));
+    // smt::Term tmp = smt::TermTranslator(solver_).transfer_term(interpolant_reader.get_interpolant());
+    logger.log(2, conjunctive->to_string());
+    // todo: when transferred, real constants become bitvectors...
+    //
     // We return a single formula which is the conjunction of all interpolants;
     // but it's ok since the refiner then just uses the predicates appearing in these
     outInterpolants.push_back(conjunctive);
@@ -185,10 +230,7 @@ smt::Result ExternalInterpolator::get_sequence_interpolants(const smt::TermVec &
     ss << "f" << i << " ";
   }
   ss << ")\n(exit)\n";
-  std::cout << ss.str();
-
   std::string s = remove_to_real(ss.str()); 
-  std::cout << s <<"\n" ;
   return execute_query(s, symbols, outInterpolants);
 }
 

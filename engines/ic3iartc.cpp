@@ -27,6 +27,11 @@ IC3IAQ::IC3IAQ(const Property & p,
     : IC3IA(p, ts, s, opt), external_interpolator_(interpolator_), use_external_interpolator_(opt.use_external_opensmt_interpolator_)
 {
   logger.log(1, "Engine: IC3IAQ");
+  std::cout << "Solver: " << s->get_solver_enum() << "\n";
+  std::cout << "Interpolator: " << interpolator_->get_solver_enum() << "\n";
+  // logger.log(1, "Interpolator: " + this->interpolator_->get_solver_enum());
+  // logger.log(1, "Solver: " + s->get_solver_enum());
+  // logger.log(1, "Interpolator: " + this->interpolator_->get_solver_enum());
   engine_ = Engine::IC3IAQ_ENGINE;
   assert(ts_.solver() == orig_property_.solver());
 }
@@ -53,30 +58,41 @@ void IC3IAQ::reconstruct_trace(const ProofGoal * pg, TermVec & out)
   }
 
   push_solver_context();
-  solver_->assert_formula(out.back());
-  solver_->assert_formula(ts_.next(bad_));
-  solver_->assert_formula(ts_.trans());
+  // smt::Term last_state_abs = ia_.abstract(out.back());
+  smt::Term next_bad = ts_.next(bad_);
+  // smt::Term bad_abs = ia_.abstract(next_bad);
+  // std::cout << "last_state: " << out.back() << "\n";
+  // smt::Term trans = ts_.trans();
+  // std::cout << "trans: " << ts_.trans() << "\n";
+  // std::cout << "next_bad: " << next_bad << "\n";
+  // solver_->assert_formula(out.back());
+  // solver_->assert_formula(ts_.next(bad_));
+  // solver_->assert_formula(ts_.trans());
 
+  solver_->assert_formula(out.back());
+  solver_->assert_formula(ts_.trans());
+  solver_->assert_formula(next_bad);
   Result r = check_sat();
   assert(r.is_sat());
 
+  // for (auto v : ts_.statevars()){
+  //   std::cout << v << ":" << solver_->get_value(v) << "\n";
+  //   std::cout << ts_.next(v) << ":" << solver_->get_value(ts_.next(v)) << "\n";
+  //   smt::Term nextv = ts_.next(v);
+  //   std::cout << ia_.abstract(nextv) << ":" << solver_->get_value(ia_.abstract(nextv)) << "\n";
+  // }
+  // for (const auto & p : predlbls_) {    
+  //   std::cout << ts_.next(p) << ": " << solver_->get_value(ts_.next(p)) << "\n";
+  //   std::cout << lbl2pred_.at(p) << ": " << solver_->get_value(ts_.next(lbl2pred_.at(p))) << "\n";
+  // }
   Term prebad = get_nextstate_model();
+  // std::cout << "Extracted bad state: " << prebad->to_string() << "\n";
   out.push_back(prebad);
-  // std::cout << "Model: " << prebad->to_string() << "\n";
   pop_solver_context();
 
-  // push_solver_context();
-  // solver_->assert_formula(prebad);
-  // solver_->assert_formula(bad_);
-  // std::cout << "\nprebad is indeed in bad_ = " << check_sat() << "\n";
-  // std::cout << "Solved for:\n";
-  // std::cout << "\t" << prebad << "\n";
-  // std::cout << "\t" << bad_ << "\n";
-  // pop_solver_context();
-
-  std::cout << "\nTRACE:\n";
+  logger.log(3, "\nAbstract trace:");
   for (auto t : out ){
-    std::cout << t->to_string() << "\n";
+    logger.log(3, t->to_string());
   }
 }
 
@@ -90,18 +106,46 @@ RefineResult IC3IAQ::refine()
   logger.log(1, "\nIC3IAQ::Refinemenent with {} steps", cex_.size());
   // counterexample trace should have been populated
   assert(cex_.size());
-  if (cex_.size() == 1) {
-    std::cout << cex_.front()->to_string() << "\n";
-    // if there are no transitions, then this is a concrete CEX
-    return REFINE_NONE;
+  // in the original ic3ia: bad_ is abstracted precisely: if there are no transitions, then this is a concrete CEX
+  // but this is not the case for quantified properties
+
+  // Recall that cex.back() is an abstract state which might contain conc states outside of bad_ (due to the abstraction being not precise)
+  // Let query denote the BMC query of length cex.size() by excluding the constraint cex.back() at step n
+  //
+  // 1) if query /\ bad_ is sat then return NO_REFINE
+  // 2) If unsat, call interpolation on query /\ cex.back(): 
+  //    if also unsat (thus refinement), then return REFINE
+  //    if sat (thus no refinement) then 
+  //       by def of cex.back() (see reconstruct_trace), it is the abstraction of a concrete state in bad_.
+  //       pick a concrete state s in cex.back() /\ bad_
+  //       refine using interpolants on query /\ s
+
+  // 1)
+  logger.log(3, "Checking BMC query to bad_\n");
+  size_t cex_length = cex_.size();
+  push_solver_context(); // push query
+  for (size_t i = 0; i < cex_length - 1; ++i) {
+    register_symbol_mappings(i);
+    Term t = unroller_.at_time(cex_[i], i);
+    if (i + 1 < cex_length) {
+      t = solver_->make_term(And, t, unroller_.at_time(conc_ts_.trans(), i));
+    }
+    solver_->assert_formula(t);
+  }
+  solver_->assert_formula(unroller_.at_time(bad_, cex_length-1));
+  Result r = solver_->check_sat();
+  pop_solver_context(); // pop query
+  if (r.is_sat()){
+    logger.log(3, "Confirmed trace\n");
+    return RefineResult::REFINE_NONE;
   }
 
-  size_t cex_length = cex_.size();
-
+  // 2)
   // use interpolator to get predicates
   // remember -- need to transfer between solvers
   assert(interpolator_ || use_external_interpolator_);
 
+  logger.log(3, "Checking BMC query + interpolants to cex.back()\n");
   TermVec formulae;
   for (size_t i = 0; i < cex_length; ++i) {
     // make sure to_solver_ cache is populated with unrolled symbols
@@ -111,24 +155,10 @@ RefineResult IC3IAQ::refine()
     if (i + 1 < cex_length) {
       t = solver_->make_term(And, t, unroller_.at_time(conc_ts_.trans(), i));
     }
-    // std::cout << "Transferring " << t->to_string() << "\n";
     formulae.push_back(to_interpolator_.transfer_term(t, BOOL));
   }
-  logger.log(1, "Getting seq interpolant for formulae:");
-  for (auto f : formulae) {
-    std::cout << f << "\n";
-  }
-  // interpolator_->reset_assertions();
-  // std::cout << interpolator_->get_solver_enum() << "\n";
-  // std::cout << "Asking for sequence interpolant:\n";
-  // interpolator_->dump_smt2("/tmp/a.smt");
-
-  // for (auto f : formulae){
-  //   std::cout << f << "\n";
-  // }
   TermVec out_interpolants;
-  Result r = smt::ResultType::UNKNOWN;
-  std::cout << "use opensmt: " << use_external_interpolator_ << "\n";
+  r = smt::ResultType::UNKNOWN;
   if (use_external_interpolator_){
     r = external_interpolator_.get_sequence_interpolants(formulae, out_interpolants);
   } else {
@@ -137,9 +167,43 @@ RefineResult IC3IAQ::refine()
   }
 
   if (r.is_sat()) {
-    // this is a real counterexample, so the property is false
-    logger.log(3, "Confirmed trace\n");
-    return RefineResult::REFINE_NONE;
+    logger.log(3, "Checking BMC query + interpolants to concrete state cex.back() /\\ bad_\n");
+    // 2b this may not be a real counterexample yet:
+    //       pick a concrete state s in cex.back() /\ bad_
+    //       refine using interpolants on query /\ s
+    push_solver_context();
+    logger.log(3, "cex.back(): " + cex_.back()->to_string());
+    logger.log(3, "bad_ " + bad_->to_string());
+    solver_->assert_formula(cex_.back());
+    solver_->assert_formula(bad_);
+    r = solver_->check_sat();
+    assert(r.is_sat());
+    // build concrete state cube
+    smt::Term s = solver_->make_term(true);      
+    for (auto v : ts_.statevars()){
+      s = solver_->make_term(smt::And, s, solver_->make_term(smt::Equal, v, solver_->get_value(v)));
+    }
+    s = unroller_.at_time(s, cex_length-1);
+    pop_solver_context();
+    logger.log(3, "conc bad cube: " + s->to_string());
+    cex_.pop_back();
+    cex_.push_back(s);
+
+    // Now start interpolation again:
+    formulae.pop_back();
+    formulae.push_back(to_interpolator_.transfer_term(s, BOOL));
+    // std::cout << "Calling interpolation again for:\n";
+    // for (auto f : formulae) {
+    //   std::cout << f << "\n";
+    // }
+    r = smt::ResultType::UNKNOWN;
+    if (use_external_interpolator_){
+      r = external_interpolator_.get_sequence_interpolants(formulae, out_interpolants);
+    } else {
+      r =
+        interpolator_->get_sequence_interpolants(formulae, out_interpolants);
+    }
+    assert(!r.is_sat());
   }
 
   // record the length of this counterexample

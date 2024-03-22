@@ -59,6 +59,7 @@ class TAIC3IATests
 
 TEST_P(TAIC3IATests, Encode)
 {
+  // MSAT IC3IA
   SmtSolver s = create_solver(get<0>(GetParam()));
   s->set_opt("incremental", "true");
   s->set_opt("produce-models", "true");
@@ -71,7 +72,9 @@ TEST_P(TAIC3IATests, Encode)
   cout << "Reading file: " << filename << endl;
   TimedVMTEncoder se(filename, rts);
   Property prop(rts.solver(), se.propvec()[0]);  
-  IC3IA ic3ia(prop, rts, s);
+  PonoOptions opts;
+  opts.use_external_opensmt_interpolator_ = true;
+  IC3IA ic3ia(prop, rts, s, opts);
   ProverResult res = ic3ia.prove();
   EXPECT_EQ(res, benchmark.second);
 }
@@ -126,6 +129,7 @@ class TAKINDTests
 
 TEST_P(TAKINDTests, Encode)
 {
+  // CVC5 k-Induction
   SmtSolver s = create_solver(get<0>(GetParam()));
   s->set_opt("incremental", "true");
   s->set_opt("produce-models", "true");

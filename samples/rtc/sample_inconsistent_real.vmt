@@ -14,10 +14,11 @@
 (define-fun trans () Bool
    (! 
      (and 
-        (= x.next (* x 3) x) 
+        (= x.next (* x 3)) 
         (= y.next (* y 2)) 
      )
      :trans true)
 )
 
 (define-fun p1 () Bool (! (< x y) :invar-property 0))
+(define-fun p2 () Bool (! (not(= x 3)) :invar-property 1))

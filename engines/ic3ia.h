@@ -51,6 +51,7 @@ class IC3IA : public IC3
 
   void add_important_var(smt::Term v);
 
+  bool witness(std::vector<smt::UnorderedTermMap> & out) override;
  protected:
   // Note: important that conc_ts_ and abs_ts_ are before ia_
   //       because we will pass them to ia_ and they must be
@@ -133,6 +134,7 @@ class IC3IA : public IC3
    *         makes sure not to repeat work
    */
   void register_symbol_mappings(size_t i);
+
 };
 
 }  // namespace pono

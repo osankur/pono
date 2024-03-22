@@ -173,6 +173,9 @@ class IC3Base : public Prover
 
   ProverResult check_until(int k) override;
 
+  /**
+   * @pre cex is populated with a feasible abstract cex trace
+  */
   bool witness(std::vector<smt::UnorderedTermMap> & out) override;
 
   size_t witness_length() const override;

@@ -5,7 +5,7 @@
 #include "smt-switch/term.h"
 using namespace smt;
 namespace pono {
-const std::string TimedTransitionSystem::DELAY_VAR_NAME = "#DELTA";
+const std::string TimedTransitionSystem::DELAY_VAR_NAME = "_DELTA_";
 
 void TimedTransitionSystem::encode_timed_automaton_delays(
     const TimedAutomatonEncoding & encoding)
