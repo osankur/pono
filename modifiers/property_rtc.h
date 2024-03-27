@@ -11,9 +11,18 @@ namespace pono {
 
     /** \brief Returns property with the following quantified formula:
      * ~(P(X) /\ ∀ Y. ∀I. T(X, I, Y) -> ~P(Y))
+     * =
+     * ~P(X) \/ ∃ Y. ∃I. T(X, I, Y) /\ P(Y)
+     * 
      * where P is p.prop().
+     * 
+     * In mode 0 (static), applies quantifier elimination so the returned property is quantifier-free
+     * In mode 1 (dynamic), the above formula is the returned property
      */
-    Property get_rt_consistency_property(Property & p, const TransitionSystem & ts) {
+Property get_rt_consistency_property(Property & p, const TransitionSystem & ts, RTConsistencyMode mode) {
+    if (mode != RTConsistencyMode::STATIC && mode != RTConsistencyMode::DYNAMIC){
+        throw PonoException("Unsupported mode for rt-consistency: use 0 or 1.");
+    }
     const smt::SmtSolver & solver = p.solver();
     // Map nextstatevar to param
     smt::UnorderedTermMap subst;    
@@ -45,24 +54,47 @@ namespace pono {
         param2var_[p] = sv;
     }
     
-    // std::cout << "trans: " << ts.trans() << "\n";
+    // // std::cout << "trans: " << ts.trans() << "\n";
+    // // transXY = T(X, pI, pY)
+    // smt::Term transXY = solver->substitute(ts.trans(), subst);
+    // // std::cout << "transXY: " << transXY << "\n";
+    // // badY = ~P(pY)
+    // smt::Term badY = solver->substitute(solver->make_term(smt::Not, p.prop()), var2param_);
+    // // T(X, pI, pY) -> ~P(pY)
+    // smt::Term rhs = solver->make_term(smt::Implies, transXY, badY);
+    // // forall pI, pY. T(X, pI, pY) -> ~P(pY)
+    // for (auto pv : param2var_) {
+    //     rhs = solver->make_term(smt::Forall, pv.first, rhs);
+    // }
+    // // ~(P(X) /\ (forall pI, pY. T(X, pI, pY) -> ~P(pY)))
+    // smt::Term rtc_prop = solver->make_term(smt::Not, solver->make_term(smt::And, p.prop(), rhs));
+    // std::cout << "RTC Prop: " << rtc_prop << "\n";
+
     // transXY = T(X, pI, pY)
     smt::Term transXY = solver->substitute(ts.trans(), subst);
-    // std::cout << "transXY: " << transXY << "\n";
-    // badY = ~P(pY)
-    smt::Term badY = solver->substitute(solver->make_term(smt::Not, p.prop()), var2param_);
-    // T(X, pI, pY) -> ~P(pY)
-    smt::Term rhs = solver->make_term(smt::Implies, transXY, badY);
-    // forall pI, pY. T(X, pI, pY) -> ~P(pY)
+    // badX = ~P(X)
+    smt::Term badX = solver->make_term(smt::Not, p.prop());
+    // T(X, pI, pY) /\ P(pY)
+    smt::Term rhs = solver->make_term(smt::And, transXY, solver->substitute(p.prop(), var2param_));
+
+    // rhs = exists pI, pY. T(X, pI, pY) /\ P(pY)
     for (auto pv : param2var_) {
-        rhs = solver->make_term(smt::Forall, pv.first, rhs);
+        rhs = solver->make_term(smt::Exists, pv.first, rhs);
     }
-    // ~(P(X) /\ (forall pI, pY. T(X, pI, pY) -> ~P(pY)))
-    smt::Term rtc_prop = solver->make_term(smt::Not, solver->make_term(smt::And, p.prop(), rhs));
-    // std::cout << "RTC Prop: " << rtc_prop << "\n";
-    return Property(p.solver(), 
-            rtc_prop,
+
+    if (mode == RTConsistencyMode::STATIC){
+        return Property(p.solver(), 
+        // ~P(X) \/ QF(exists pI, pY. T(X, pI, pY) /\ P(pY)))
+            p.solver()->make_term(smt::Or,badX, p.solver()->eliminate_quantifiers(rhs)),
+            "_rtc_" + p.name()
+            );
+        ;
+    } else {
+        // ~P(X) \/ exists pI, pY. T(X, pI, pY) /\ P(pY))
+        return Property(p.solver(), 
+            solver->make_term(smt::Or, badX, rhs),
             "_rtc_" + p.name()
             );
     }
+}
 }

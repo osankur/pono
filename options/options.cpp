@@ -594,8 +594,8 @@ const option::Descriptor usage[] = {
     0,
     "",
     "rt-consistency",
-    Arg::None,
-    "  --rt-consistency \tcheck rt-consistency "
+    Arg::Numeric,
+    "  --rt-consistency \tcheck rt-consistency: 0 for static (with one big quantifier elimination at the beginning), 1 for dynamic check (keeping the property quantified)"
     },
   { TIMED_AUTOMATON,
     0,
@@ -814,7 +814,10 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
 	  if (kind_bound_step_ == 0)
 	    throw PonoException("--kind-bound-step must be greater than 0");
 	  break;
-        case RT_CONSISTENCY: rtconsistency_ = true; break;
+        case RT_CONSISTENCY: 
+          rt_consistency_ = true; 
+          rt_consistency_mode_ = RTConsistencyMode(atoi(opt.arg));
+          break;
         case TIMED_AUTOMATON: timed_automaton_ = true; break;
         case USE_EXTERNAL_OPENSMT_INTERPOLATOR: use_external_opensmt_interpolator_ = true; break;
         case UNKNOWN_OPTION:

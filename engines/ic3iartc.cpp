@@ -103,7 +103,7 @@ void IC3IAQ::reconstruct_trace(const ProofGoal * pg, TermVec & out)
 */
 RefineResult IC3IAQ::refine()
 {
-  logger.log(1, "\nIC3IAQ::Refinemenent with {} steps", cex_.size());
+  logger.log(1, "\nIC3IAQ::Refinemenent with {} steps\n", cex_.size());
   // counterexample trace should have been populated
   assert(cex_.size());
   // in the original ic3ia: bad_ is abstracted precisely: if there are no transitions, then this is a concrete CEX
@@ -120,6 +120,8 @@ RefineResult IC3IAQ::refine()
   //       pick a concrete state s in cex.back() /\ bad_
   //       refine using interpolants on query /\ s
 
+  // todo we might want to generalize the cube s to a larger set which all intersect bad_ (how?)
+
   // 1)
   logger.log(3, "Checking BMC query to bad_\n");
   size_t cex_length = cex_.size();
@@ -134,6 +136,9 @@ RefineResult IC3IAQ::refine()
   }
   solver_->assert_formula(unroller_.at_time(bad_, cex_length-1));
   Result r = solver_->check_sat();
+  if (!r.is_sat()){
+    // solver_->
+  }
   pop_solver_context(); // pop query
   if (r.is_sat()){
     logger.log(3, "Confirmed trace\n");
@@ -145,7 +150,7 @@ RefineResult IC3IAQ::refine()
   // remember -- need to transfer between solvers
   assert(interpolator_ || use_external_interpolator_);
 
-  logger.log(3, "Checking BMC query + interpolants to cex.back()\n");
+  logger.log(3, "Checking BMC query + interpolants to cex.back()");
   TermVec formulae;
   for (size_t i = 0; i < cex_length; ++i) {
     // make sure to_solver_ cache is populated with unrolled symbols
@@ -167,15 +172,15 @@ RefineResult IC3IAQ::refine()
   }
 
   if (r.is_sat()) {
-    logger.log(3, "Checking BMC query + interpolants to concrete state cex.back() /\\ bad_\n");
+    logger.log(3, "\t sat\nChecking BMC query + interpolants to concrete state cex.back() /\\ bad_\n");
     // 2b this may not be a real counterexample yet:
     //       pick a concrete state s in cex.back() /\ bad_
     //       refine using interpolants on query /\ s
     push_solver_context();
     logger.log(3, "cex.back(): " + cex_.back()->to_string());
     logger.log(3, "bad_ " + bad_->to_string());
-    solver_->assert_formula(cex_.back());
     solver_->assert_formula(bad_);
+    solver_->assert_formula(cex_.back());
     r = solver_->check_sat();
     assert(r.is_sat());
     // build concrete state cube

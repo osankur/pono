@@ -21,7 +21,7 @@ namespace pono_tests {
 
 const unordered_map<string, pono::ProverResult> inputs(
     { 
-      { "sample_consistent.smv", pono::ProverResult::TRUE },
+      { "sample_consistent.smv", pono::ProverResult::TRUE},
       { "sample_inconsistent.smv", pono::ProverResult::FALSE },
       { "sample_consistent_real.vmt", pono::ProverResult::TRUE },
       { "sample_inconsistent_real.vmt", pono::ProverResult::FALSE }
@@ -36,10 +36,11 @@ class RTCTests
 
 TEST_P(RTCTests, Encode)
 {
-  SmtSolver s = create_solver(get<0>(GetParam()));
-  s->set_opt("incremental", "true");
-  s->set_opt("produce-models", "true");
-  
+  SmtSolver s = create_solver_for(get<0>(GetParam()),
+                                  IC3IAQ_ENGINE,
+                                  false,
+                                  false);
+  s->set_opt("produce-unsat-assumptions", "true");
   // PONO_SRC_DIR is a macro set using CMake PROJECT_SRC_DIR
   auto benchmark = get<1>(GetParam());
   string filename = STRFY(PONO_SRC_DIR);
@@ -49,19 +50,19 @@ TEST_P(RTCTests, Encode)
   ProverResult res = benchmark.second;
   RelationalTransitionSystem rts(s);
   if (filename.find(".vmt") != filename.npos) {
-    // TimedTransitionSystem rts(s);
-    // TimedVMTEncoder se(filename, rts);
     VMTEncoder se(filename, rts);
     Property plain_prop = Property(rts.solver(), se.propvec()[0]);
-    Property prop = get_rt_consistency_property(plain_prop, rts);
+    Property prop = get_rt_consistency_property(plain_prop, rts, RTConsistencyMode::DYNAMIC);
     IC3IAQ ic3iartc(prop, rts, s);
     res = ic3iartc.prove();
+    EXPECT_EQ(res, benchmark.second);    
   } else if (filename.find(".smv") != filename.npos) {
     SMVEncoder se(filename, rts);
     Property plain_prop(rts.solver(), se.propvec()[0]);  
-    Property prop = get_rt_consistency_property(plain_prop, rts);
+    Property prop = get_rt_consistency_property(plain_prop, rts, RTConsistencyMode::DYNAMIC);
     IC3IAQ ic3iartc(prop, rts, s);
     res = ic3iartc.prove();
+    EXPECT_EQ(res, benchmark.second);
   }
   EXPECT_EQ(res, benchmark.second);
 }

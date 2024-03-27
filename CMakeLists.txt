@@ -127,6 +127,7 @@ set(INCLUDE_DIRS
   "${PROJECT_SOURCE_DIR}/contrib/optionparser-1.7/src"
   "${PROJECT_SOURCE_DIR}/deps/btor2tools/src"
   "${SMT_SWITCH_DIR}/local/include"
+  "${SMT_SWITCH_DIR}/"
   "${SMT_SWITCH_DIR}/deps/cvc5/src"
   # generated Bison headers go in build directory
   "${CMAKE_CURRENT_BINARY_DIR}"
@@ -293,7 +294,8 @@ target_include_directories(pono-bin PUBLIC
   "${PROJECT_SOURCE_DIR}/contrib/"
   "${PROJECT_SOURCE_DIR}/contrib/optionparser-1.7/src"
   "${PROJECT_SOURCE_DIR}/deps/btor2tools/src"
-  "${SMT_SWITCH_DIR}/local/include")
+  "${SMT_SWITCH_DIR}/local/include"
+  "${SMT_SWITCH_DIR}/msat/include")
 
 target_link_libraries(pono-bin PUBLIC pono-lib)
 

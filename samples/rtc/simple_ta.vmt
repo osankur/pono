@@ -34,8 +34,7 @@
     (not loc__AT1)
     )
   )
-
-(=> (not loc__AT0) (and
+  (=> (not loc__AT0) (and
     (= x__AT1 (to_real 0))
     (= y__AT1 (to_real 0))
     loc__AT1

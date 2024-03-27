@@ -67,7 +67,7 @@ const std::unordered_map<std::string, Engine> str2engine(
       { "msat-ic3ia", MSAT_IC3IA },
       { "ic3sa", IC3SA_ENGINE },
       { "sygus-pdr", SYGUS_PDR },
-      { "ic3ia-rtc", IC3IAQ_ENGINE } });
+      { "ic3iaq", IC3IAQ_ENGINE } });
 
 // SyGuS mode option
 enum SyGuSTermMode{
@@ -76,6 +76,11 @@ enum SyGuSTermMode{
   SPLIT_FROM_DESIGN = 2,
   VAR_C_EQ_LT = 3,
   TERM_MODE_AUTO = 4
+};
+
+enum RTConsistencyMode{
+  STATIC = 0,
+  DYNAMIC = 1
 };
 
 /*************************************** Options class
@@ -152,7 +157,8 @@ class PonoOptions
         kind_no_ind_check_property_(default_kind_no_ind_check_property_),
         kind_one_time_base_check_(default_kind_one_time_base_check_),
         kind_bound_step_(default_kind_bound_step_),
-        rtconsistency_(default_rt_consistency_),
+        rt_consistency_(default_rt_consistency_),
+        rt_consistency_mode_(default_rt_consistency_mode_),
         timed_automaton_(default_timed_automaton_),
         use_external_opensmt_interpolator_(default_use_external_opensmt_interpolator_),
         interpolator_(default_interpolator_)
@@ -198,7 +204,8 @@ class PonoOptions
   bool static_coi_;
   bool show_invar_;   ///< display invariant when running from command line
   bool check_invar_;  ///< check invariants (if available) when run through CLI
-  bool rtconsistency_;
+  bool rt_consistency_; ///< if true we are checking rt-consistency w.r.t. prop
+  RTConsistencyMode rt_consistency_mode_;
   bool timed_automaton_;
   // ic3 options
   bool ic3_pregen_;  ///< generalize counterexamples in IC3
@@ -369,6 +376,7 @@ private:
   static const bool default_kind_one_time_base_check_ = false;
   static const unsigned default_kind_bound_step_ = 1;
   static const bool default_rt_consistency_ = false;
+  static const RTConsistencyMode default_rt_consistency_mode_ = RTConsistencyMode::STATIC;
   static const bool default_timed_automaton_ = false;
   static const bool default_use_external_opensmt_interpolator_ = false;
   static const smt::SolverEnum default_interpolator_ = smt::MSAT;

@@ -45,6 +45,7 @@ loc__AT0
 
 ) :trans true))
 
-(define-fun .def_19 () Bool (! loc__AT0 :invar-property 0))
+(define-fun .def_19 () Bool (! (or loc__AT0 (<= x__AT0 2)) :invar-property 0))
+(define-fun .def_20 () Bool (! (or loc__AT0 (<= x__AT0 5)) :invar-property 1))
 
 (assert true)

@@ -81,7 +81,7 @@ shared_ptr<Prover> make_prover(Engine e,
   with_msat = true;
 #endif 
   if (with_msat || opts.use_external_opensmt_interpolator_){
-    if (opts.rtconsistency_){
+    if (opts.rt_consistency_){
       return make_shared<IC3IAQ>(p, ts, slv, opts);
     } else {
       return make_shared<IC3IA>(p, ts, slv, opts);

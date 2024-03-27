@@ -31,16 +31,21 @@ One also needs an SMT solver supporting linear theory of reals e.g. cvc5.
 ## Using RT-Consistency Algorithms
 RT-Consistency check is relevant both for Boolean systems and timed automata.
 
-- BMC or k-induction can be used out of the box using a solver supporting quantifiers (CVC5 or Z3).
+BMC or k-induction can be used out of the box using a solver supporting quantifiers (CVC5 or Z3).
 Specifying the `--rt-consistency` option will rewrite the property `P` given in the input file as 
 
     Qprop = ~(P(X) /\ ∀ Y. ∀I. T(X, I, Y) -> ~P(Y))
 
-The BMC and k-induction algorithms to check rt-consistency can be run as follows.
+There are two rt-consistency algorithms: the static (0) one eliminates quantifiers from the above formula,
+and applies any standard algorithm; the dynamic (1) one keeps the quantified formula.
 
-    pono -e bmc --smt-solver cvc5 --rt-consistency samples/rtc/sample_consistent.smv
-    pono -e ind --smt-solver cvc5 --rt-consistency samples/rtc/sample_consistent.smv
-    pono -e ind --smt-solver cvc5 --rt-consistency samples/rtc/sample_inconsistent.smv
+The BMC and k-induction algorithms can be run to check rt-consistency with the dynamic algorithm as follows.
+
+    pono -e bmc --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono -e ind --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono -e ind --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_inconsistent.smv
+
+Use --rt-consistency 0 for the static algorithm.
 
 The tool answers `unsat` if there is no inconsistency (~Qprop is not reachable),
 `sat` if it finds a counterexample, and `unknown` otherwise.
@@ -48,9 +53,22 @@ Note that the BMC answers Unknown above since it can only detect counterexamples
 
 On an rt-inconsistent input, a witness can be displayed with the `--witness` option:
 
-    ./pono -e bmc --smt-solver cvc5 --rt-consistency --witness ../samples/rtc/sample_inconsistent.smv
+    pono -e bmc --smt-solver cvc5 --rt-consistency 0 --witness samples/rtc/sample_inconsistent.smv
 
-Note that the IC3 algorithms do not currently have witness generation.
+The ic3ia engine can be used to check rt-consistency statically provided that an smt-solver with quantifier elimination is provided.
+In this case, the interpolator is msat:
+
+    pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 samples/rtc/sample_consistent.smv
+    pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 --witness samples/rtc/sample_inconsistent.smv
+
+(Witness generation to ic3ia was added in this fork).
+
+A variant of the ic3ia algorithm is implemented as well to check rt-consistency dynamically. Again the interpolator by default is msat.
+
+    pono -e ic3ia --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono -e ic3ia --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_inconsistent.smv
+
+It is possible to specify a custom interpolator with the --interpolator option.
 
 ## Installation
 The following packages are required for compilation to succeed
