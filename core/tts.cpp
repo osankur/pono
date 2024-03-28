@@ -50,7 +50,7 @@ void TimedTransitionSystem::encode_compact_delays(){
      * /\ (trans(C,X,I,C'-delta,X')
      * /\ locinvar(X',C')
      */
-  smt::Term zero = solver_->make_term("0", realsort);
+  smt::Term zero = solver_->make_term(To_Real, solver_->make_term("0", solver_->make_sort(INT)));
   smt::Term clocks_nonnegative = solver_->make_term(true);
   smt::Term clocks_are_zero = solver_->make_term(true);
   for (auto c : clock_vars_) {

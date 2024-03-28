@@ -62,11 +62,16 @@ In this case, the interpolator is msat:
     pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 --witness samples/rtc/sample_inconsistent.smv
 
 (Witness generation to ic3ia was added in this fork).
+Note that the witness is a path to a state whose all successors violate the given property.
 
 A variant of the ic3ia algorithm is implemented as well to check rt-consistency dynamically. Again the interpolator by default is msat.
 
     pono -e ic3ia --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
     pono -e ic3ia --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_inconsistent.smv
+
+RT-consistency of timed automata, using both algorithms:
+    pono -e ic3ia --smt-solver cvc5 -ta --rt-consistency 1 samples/rtc/simple_ta.vmt
+    pono -e ic3ia --smt-solver cvc5 -ta --rt-consistency 0 samples/rtc/simple_ta.vmt
 
 It is possible to specify a custom interpolator with the --interpolator option.
 

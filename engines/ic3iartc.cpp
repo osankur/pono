@@ -9,6 +9,7 @@
 
 #include <random>
 
+#include <string>
 #include "smt/available_solvers.h"
 #include "smt/external_interpolator.h"
 #include "utils/logger.h"
@@ -27,11 +28,6 @@ IC3IAQ::IC3IAQ(const Property & p,
     : IC3IA(p, ts, s, opt), external_interpolator_(interpolator_), use_external_interpolator_(opt.use_external_opensmt_interpolator_)
 {
   logger.log(1, "Engine: IC3IAQ");
-  std::cout << "Solver: " << s->get_solver_enum() << "\n";
-  std::cout << "Interpolator: " << interpolator_->get_solver_enum() << "\n";
-  // logger.log(1, "Interpolator: " + this->interpolator_->get_solver_enum());
-  // logger.log(1, "Solver: " + s->get_solver_enum());
-  // logger.log(1, "Interpolator: " + this->interpolator_->get_solver_enum());
   engine_ = Engine::IC3IAQ_ENGINE;
   assert(ts_.solver() == orig_property_.solver());
 }
@@ -183,11 +179,14 @@ RefineResult IC3IAQ::refine()
     solver_->assert_formula(cex_.back());
     r = solver_->check_sat();
     assert(r.is_sat());
-    // build concrete state cube
-    smt::Term s = solver_->make_term(true);      
+    // build concrete state cube    
+    smt::Term s = solver_->make_term(true);
     for (auto v : ts_.statevars()){
+      smt::Term vt = solver_->get_value(v);
       s = solver_->make_term(smt::And, s, solver_->make_term(smt::Equal, v, solver_->get_value(v)));
     }
+   
+
     s = unroller_.at_time(s, cex_length-1);
     pop_solver_context();
     logger.log(3, "conc bad cube: " + s->to_string());
@@ -217,8 +216,6 @@ RefineResult IC3IAQ::refine()
   // have already been cached in to_solver_
   longest_cex_length_ = cex_length;
 
-  logger.log(3, "Seq interpolant size: ");
-  // std::cout << "Interp size : " <<  + out_interpolants.size() << "\n";
   UnorderedTermSet preds;
   for (auto const&I : out_interpolants) {
     if (!I) {

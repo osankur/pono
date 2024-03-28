@@ -903,6 +903,11 @@ void IC3Base::fix_if_intersects_initial(TermVec & to_keep, const TermVec & rem)
   if (rem.size() != 0) {
     Term formula = solver_->make_term(And, ts_.init(), make_and(to_keep));
 
+    // smt::SmtSolver news = create_solver(CVC5);
+    // TermTranslator tt(news);
+    // smt::Term ttf = tt.transfer_term(formula, BOOL);
+    // std::cout << "tt: " << ttf << " of sort: " << ttf->get_sort() << "\n";
+    // news->assert_formula(ttf);
     bool success = reducer_.reduce_assump_unsatcore(formula,
                                                     rem,
                                                     to_keep,

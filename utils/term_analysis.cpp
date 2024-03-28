@@ -226,6 +226,10 @@ void get_predicates(const SmtSolver & solver,
     if (visited.find(t) == visited.end()) {
       visited.insert(t);
 
+      if (t->is_value()) {
+        // values are not predicates
+        continue;
+      }
       TermVec children(t->begin(), t->end());
       // later we will want to know which children are ITEs (if any)
       unordered_set<size_t> ite_indices;
@@ -233,7 +237,7 @@ void get_predicates(const SmtSolver & solver,
       Term c;
       for (size_t i = 0; i < children.size(); ++i) {
         c = children[i];
-        if (c->get_op() == Ite) {
+        if (!c->is_value() && c->get_op() == Ite) {
           ite_indices.insert(i);
         }
       }
@@ -245,10 +249,6 @@ void get_predicates(const SmtSolver & solver,
 
       if (t->get_op() == smt::Forall || t->get_op() == smt::Exists){
         // skip quantified formulas
-        continue;
-      }
-      if (t->is_value()) {
-        // values are not predicates
         continue;
       }
 
