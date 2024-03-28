@@ -1,0 +1,177 @@
+;  bool loc0, loc1;
+;  bool err;
+;
+;  (err, loc0, loc1)
+;  000 IDLE
+;  001 TRIG
+;  010 DELAY
+;  011 ACTION
+;  1__ ERR
+; 
+;    ( ~loc0 /\ ~loc1 /\ ~err /\ TSE /\ ~loc0' /\ loc1' /\ c'=0 /\ ~err' )   ; IDLE -> TRIG
+; \/ ( ~loc0 /\ loc1 /\ ~err /\ TEE /\ Tmin <= c <= Tmax /\ loc0' /\ ~loc1' /\ ~err' /\ c' = 0 ) ; TRIG -> DELAY
+; \/ ( ~loc0 /\ loc1 /\ ~err /\ TC /\ c < Tmax /\ (~TEE \/ c < Tmin) /\ ~loc0' /\ loc1' /\ ~err' /\ c' = c ) ; TRIG -> TRIG
+;
+
+;ID_00170 : Globally,
+;             it is always the case that
+;               if (x00196 == x00069) holds for at least x00260 time units
+;                 , then (x00196 == x00049) holds afterwards for at least x00261 time units
+;
+;this is the states for SUP
+
+;; OS: Check if Int sorts cause a problem; using Bool could be better
+(define-fun IDLE () Int 0)
+(define-fun TRIG () Int 1)
+(define-fun DELAY () Int 2)
+(define-fun ACTION () Int 3)
+(define-fun ERR () Int 4)
+
+;this is the global time counter
+;(declare-fun t () Int)
+;(declare-fun tn () Int)
+;(define-fun .sv0 () Int (! t :next tn))
+
+;; OS: The TA semantics sets all initial clock values to 0 automatically
+;(define-fun .init () Bool (! (= t 1) :init true))
+
+;; OS: The TA semantics defines adds delay transitions, we don't define them in the input file
+;(define-fun .trans () Bool (! (= tn (+ t 1)) :trans true))
+
+;; OS: The following seems useless, except for a sanity check
+; (define-fun .p0 () Bool (! (> t 0) :invar-property 0))
+
+;these are the variables used in triggers and actions
+(declare-fun x00049 () Int)
+(assert(= x00049 1))
+(declare-fun x00260 () Real)
+
+;; OS: I think Pono's parser does not like floating points (Idk why). Use (to_real 100)
+(assert(= x00260 (to_real 100)))
+(declare-fun x00261 () Int)
+(assert(= x00261 33))
+(declare-fun x00069 () Int)
+(assert(= x00069 3))
+(declare-fun x00196 () Int)
+
+;these are generated SUPs 
+;generation of the SUP state machine for requirement ID_00170 
+(define-fun tse_ID_00170_0 () Bool (= x00196   x00069 ))
+(define-fun tc_ID_00170_0 () Bool (= x00196   x00069 ))
+(define-fun tee_ID_00170_0 () Bool (= x00196   x00069 ))
+(define-fun ase_ID_00170_0 () Bool (= x00196   x00049 ))
+(define-fun ac_ID_00170_0 () Bool (= x00196   x00049 ))
+(define-fun aee_ID_00170_0 () Bool (= x00196   x00049 ))
+;these are the function to access SUP attributes (state, time counter, trigger/delay/action time
+(declare-fun state_ID_00170_0 () Int)
+(declare-fun state_ID_00170_0_n () Int)
+(declare-fun c_ID_00170_0 () Int)
+(declare-fun c_ID_00170_0_n () Int)
+(define-fun tmin_ID_00170_0 () Int 1000)
+(define-fun tmax_ID_00170_0 () Int 1000)
+(define-fun lmin_ID_00170_0 () Int 1)
+(define-fun lmax_ID_00170_0 () Int 1)
+(define-fun amin_ID_00170_0 () Int 330)
+(define-fun amax_ID_00170_0 () Int 330)
+
+;these are the function to explicit SUP time counter initial value and transition
+;for counter and state, transition resulting in -1 shall not happen (this is an error in the state machine transcription in vmtlib)
+;for counter, transition resulting in -ERR means there is a requirement that is not satisfied 
+;for state, transition resulting in ERR means there is a requirement that is not satisfied 
+(define-fun .c_ID_00170_0_sv0 () Int (!  c_ID_00170_0 :next c_ID_00170_0_n))
+(define-fun .c_ID_00170_0_init () Bool (! (= c_ID_00170_0 0) :init true))
+(define-fun .c_ID_00170_0_trans () Bool (! (= c_ID_00170_0_n 
+                        ( ite  	(= state_ID_00170_0  IDLE)
+                          (ite (not tse_ID_00170_0) 0 0)
+                          (ite (= state_ID_00170_0  TRIG)
+                            ( ite 	( or ( and (not tee_ID_00170_0) (not tc_ID_00170_0)) (and (not tc_ID_00170_0) (< c_ID_00170_0 tmin_ID_00170_0)) (and (not tee_ID_00170_0) (>= c_ID_00170_0 tmax_ID_00170_0 )) (> c_ID_00170_0  tmax_ID_00170_0 )) 
+                              0
+                              (ite ( and tc_ID_00170_0 (< c_ID_00170_0  tmax_ID_00170_0 ) ( or ( not tee_ID_00170_0)  (< c_ID_00170_0  tmin_ID_00170_0 )))
+                                c_ID_00170_0
+                                (ite (and tee_ID_00170_0 (<= tmin_ID_00170_0 c_ID_00170_0) (<= c_ID_00170_0  tmax_ID_00170_0 )) 
+                                  0
+                                  (- 1)
+                                            
+                                )
+                              )
+                            )
+                            (ite (= state_ID_00170_0  DELAY)
+                              (ite (and (not ase_ID_00170_0) (>= c_ID_00170_0 lmax_ID_00170_0 )) 
+                                (- ERR)
+                                (ite (and (< c_ID_00170_0 lmax_ID_00170_0 ) (or (not ase_ID_00170_0 )(< c_ID_00170_0 lmin_ID_00170_0)))
+                                    (+ c_ID_00170_0 1)
+                                    (ite (and ase_ID_00170_0 (<= lmin_ID_00170_0 c_ID_00170_0) (<= c_ID_00170_0 lmax_ID_00170_0 ))
+                                        0
+                                        (- 1)
+                                    )
+                                )
+                              )
+                              (ite (= state_ID_00170_0  ACTION)
+                                (ite (and aee_ID_00170_0 (<= amin_ID_00170_0  c_ID_00170_0) (<= c_ID_00170_0 amax_ID_00170_0 ))
+                                    0
+                                    (ite (or (and (not ac_ID_00170_0) (not aee_ID_00170_0)) (and (not ac_ID_00170_0) (< c_ID_00170_0 amin_ID_00170_0)) (and (not aee_ID_00170_0) (>= c_ID_00170_0 amax_ID_00170_0)) (> c_ID_00170_0 amax_ID_00170_0))
+                                      (- ERR)
+                                      (ite (and ac_ID_00170_0 (< c_ID_00170_0 amax_ID_00170_0) (or (not aee_ID_00170_0) (< c_ID_00170_0 amin_ID_00170_0)))
+                                            (+ c_ID_00170_0 1)
+                                            (- 1)
+                                      )
+                                    )
+                                )
+                                (- 1)
+                              )
+                            )
+                          )
+                        )
+                      ) :trans true))
+(define-fun .c_ID_00170_0_p0 () Bool (! (>= c_ID_00170_0 0)  :invar-property 0))
+
+;these are the function to explicit SUP state initial value and transition
+(define-fun .state_ID_00170_0_sv0 () Int (!  state_ID_00170_0 :next state_ID_00170_0_n))
+;; OS: The initial state should be IDLE = 0
+(define-fun .state_ID_00170_0_init () Bool (! (= state_ID_00170_0 0) :init true))
+(define-fun .state_ID_00170_0_trans () Bool (! (= state_ID_00170_0_n 
+                        ( ite  	(= state_ID_00170_0  IDLE)
+                          (ite (not tse_ID_00170_0) IDLE TRIG)
+                          (ite (= state_ID_00170_0  TRIG )
+                            ( ite 	( or ( and (not tee_ID_00170_0) (not tc_ID_00170_0)) (and (not tc_ID_00170_0) (< c_ID_00170_0 tmin_ID_00170_0)) (and (not tee_ID_00170_0) (>= c_ID_00170_0 tmax_ID_00170_0 )) (> c_ID_00170_0  tmax_ID_00170_0 )) 
+                              IDLE 
+                              (ite ( and tc_ID_00170_0 (< c_ID_00170_0  tmax_ID_00170_0 ) ( or ( not tee_ID_00170_0)  (< c_ID_00170_0  tmin_ID_00170_0 )))
+                                TRIG
+                                (ite (and tee_ID_00170_0 (<= tmin_ID_00170_0 c_ID_00170_0) (<= c_ID_00170_0  tmax_ID_00170_0 )) 
+                                  DELAY
+                                  (- 1) 
+                                )
+                              )
+                            )
+                            (ite (= state_ID_00170_0  DELAY)
+                              (ite (and (not ase_ID_00170_0) (>= c_ID_00170_0 lmax_ID_00170_0 )) 
+                                ERR
+                                (ite (and (< c_ID_00170_0 lmax_ID_00170_0 ) (or (not ase_ID_00170_0 )(< c_ID_00170_0 lmin_ID_00170_0)))
+                                    DELAY
+                                    (ite (and ase_ID_00170_0 (<= lmin_ID_00170_0 c_ID_00170_0) (<= c_ID_00170_0 lmax_ID_00170_0 ))
+                                        ACTION
+                                        (- 1)
+                                    )
+                                )
+                              )
+                              (ite (= state_ID_00170_0  ACTION)
+                                (ite (and aee_ID_00170_0 (<= amin_ID_00170_0  c_ID_00170_0) (<= c_ID_00170_0 amax_ID_00170_0 ))
+                                    IDLE
+                                    (ite (or (and (not ac_ID_00170_0) (not aee_ID_00170_0)) (and (not ac_ID_00170_0) (< c_ID_00170_0 amin_ID_00170_0)) (and (not aee_ID_00170_0) (>= c_ID_00170_0 amax_ID_00170_0)) (> c_ID_00170_0 amax_ID_00170_0))
+                                      ERR
+                                      (ite (and ac_ID_00170_0 (< c_ID_00170_0 amax_ID_00170_0) (or (not aee_ID_00170_0) (< c_ID_00170_0 amin_ID_00170_0)))
+                                            ACTION
+                                            (- 1)
+                                      )
+                                    )
+                                )
+                                (- 1)
+                              )
+                            )
+                          )
+                        )
+                      ) :trans true))
+(define-fun .state_ID_00170_0_p0 () Bool (! (and (>= state_ID_00170_0 IDLE)  (< state_ID_00170_0 ERR))  :invar-property 1))
+
+
+(check-sat)
