@@ -342,21 +342,21 @@ void TransitionSystem::add_statevar(const Term & cv, const Term & nv)
   //       saying whether to check these things or not
 
   if (statevars_.find(cv) != statevars_.end()) {
-    throw PonoException("Cannot redeclare a state variable");
+    throw PonoException("Cannot redeclare a state variable " + cv->to_string());
   }
 
   if (next_statevars_.find(nv) != next_statevars_.end()) {
-    throw PonoException("Cannot redeclare a state variable");
+    throw PonoException("Cannot redeclare a state variable " + cv->to_string());
   }
 
   if (next_statevars_.find(cv) != next_statevars_.end()) {
     throw PonoException(
-        "Cannot use an existing next state variable as a current state var");
+        "Cannot use an existing next state variable as a current state var "  + cv->to_string());
   }
 
   if (statevars_.find(nv) != statevars_.end()) {
     throw PonoException(
-        "Cannot use an existing state variable as a next state var");
+        "Cannot use an existing state variable as a next state var " + cv->to_string());
   }
 
   // if using an input variable, remove from set

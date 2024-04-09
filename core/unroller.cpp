@@ -83,7 +83,9 @@ size_t Unroller::get_curr_time(const smt::Term & t) const
 
 Term Unroller::var_at_time(const Term & v, unsigned int k)
 {
-  assert(v->is_symbolic_const());
+  if (!v->is_symbolic_const()){
+    throw PonoException("var_at_time: Variable " + v->to_string() + " is not a symbolic constant");
+  }
 
   while (time_var_map_.size() <= k) {
     time_var_map_.push_back(UnorderedTermMap());
