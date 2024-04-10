@@ -94,7 +94,7 @@ enum optionIndex
   KIND_BOUND_STEP,
   RT_CONSISTENCY,
   TIMED_AUTOMATON,
-  USE_EXTERNAL_OPENSMT_INTERPOLATOR
+  EXTERNAL_INTERPOLATOR
 };
 
 struct Arg : public option::Arg
@@ -604,12 +604,12 @@ const option::Descriptor usage[] = {
     Arg::None,
     "  --timed-automaton, -ta \tinterpret the input file as a timed automaton"
     },
-  { USE_EXTERNAL_OPENSMT_INTERPOLATOR,
+  { EXTERNAL_INTERPOLATOR,
     0,
     "opensmt",
-    "use-external-opensmt-interpolator",
-    Arg::None,
-    "  --use-external-opensmt-interpolator, -opensmt \tuse light-weight interface to OpenSMT for interpolation. Only valid for the ic3iartc engine. "
+    "external-interpolator",
+    Arg::NonEmpty,
+    "  --external-interpolator, \tuse light-weight interface to external interpolator (opensmt, z3, smtinterpol). Only valid for the ic3iaq engine. "
     },    
   { INTERPOLATOR,
     0,
@@ -819,7 +819,17 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
           rt_consistency_mode_ = RTConsistencyMode(atoi(opt.arg));
           break;
         case TIMED_AUTOMATON: timed_automaton_ = true; break;
-        case USE_EXTERNAL_OPENSMT_INTERPOLATOR: use_external_opensmt_interpolator_ = true; break;
+        case EXTERNAL_INTERPOLATOR: 
+          if (opt.arg == std::string("z3")) {
+            external_interpolator_ = ExternalInterpolatorEnum::Z3;
+          } else if (opt.arg == std::string("opensmt")) {
+            external_interpolator_ = ExternalInterpolatorEnum::OPENSMT;
+          } else if (opt.arg == std::string("smtinterpol")) {
+            external_interpolator_ = ExternalInterpolatorEnum::SMTINTERPOL;
+          } else {
+            throw PonoException("Unrecognized interpolator: " + std::string(opt.arg));
+          }
+        break;
         case UNKNOWN_OPTION:
           // not possible because Arg::Unknown returns ARG_ILLEGAL
           // which aborts the parse with an error

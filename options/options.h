@@ -46,6 +46,13 @@ enum Engine
   // used for setting solver options appropriately
 };
 
+enum ExternalInterpolatorEnum {
+  NONE = -1,
+  OPENSMT,
+  SMTINTERPOL,
+  Z3
+};
+
 // NOTE keep this up to date so that setting
 //      solver options based on the engine works
 //      as expected.
@@ -68,6 +75,12 @@ const std::unordered_map<std::string, Engine> str2engine(
       { "ic3sa", IC3SA_ENGINE },
       { "sygus-pdr", SYGUS_PDR },
       { "ic3iaq", IC3IAQ_ENGINE } });
+
+const std::unordered_map<std::string, ExternalInterpolatorEnum> str2extinterpolator(
+    { { "opensmt", OPENSMT },
+      { "z3", Z3}
+    }
+);
 
 // SyGuS mode option
 enum SyGuSTermMode{
@@ -160,7 +173,7 @@ class PonoOptions
         rt_consistency_(default_rt_consistency_),
         rt_consistency_mode_(default_rt_consistency_mode_),
         timed_automaton_(default_timed_automaton_),
-        use_external_opensmt_interpolator_(default_use_external_opensmt_interpolator_),
+        external_interpolator_(default_external_interpolator_),
         interpolator_(default_interpolator_)
   {
   }
@@ -199,7 +212,7 @@ class PonoOptions
   std::string filename_;
   smt::SolverEnum smt_solver_;  ///< underlying smt solver
   smt::SolverEnum interpolator_;  ///< interpolator used by IC3IA and IC3IAQ
-  bool use_external_opensmt_interpolator_;  
+  ExternalInterpolatorEnum external_interpolator_;
   bool logging_smt_solver_;
   bool static_coi_;
   bool show_invar_;   ///< display invariant when running from command line
@@ -378,7 +391,7 @@ private:
   static const bool default_rt_consistency_ = false;
   static const RTConsistencyMode default_rt_consistency_mode_ = RTConsistencyMode::STATIC;
   static const bool default_timed_automaton_ = false;
-  static const bool default_use_external_opensmt_interpolator_ = false;
+  static const ExternalInterpolatorEnum default_external_interpolator_ = ExternalInterpolatorEnum::NONE;
   static const smt::SolverEnum default_interpolator_ = smt::MSAT;
 };
 

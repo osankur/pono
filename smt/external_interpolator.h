@@ -13,11 +13,6 @@
 
 namespace pono{
 
-enum ExternalInterpolatorEnum {
-  OpenSMT,
-  SMTInterpol
-};
-
 /**
  * A light-weight interface to OpenSMT by calling it as an external program.
 */
@@ -26,7 +21,7 @@ class ExternalInterpolator {
   /**
    * @arg original_interpolator a solver for which the produced interpolants will be transferred.
   */
-  ExternalInterpolator(smt::SmtSolver & original_interpolator, ExternalInterpolatorEnum externalInterpolator = OpenSMT) 
+  ExternalInterpolator(smt::SmtSolver & original_interpolator, ExternalInterpolatorEnum externalInterpolator = OPENSMT) 
     : original_interpolator_(original_interpolator),
       solver_(create_solver(smt::CVC5)),
       to_original_interpolator_(original_interpolator),
@@ -38,9 +33,10 @@ class ExternalInterpolator {
 
   std::string executable(){
     switch(externalInterpolator_){
-      case OpenSMT: return "opensmt";
-      case SMTInterpol:
-        return "java -jar ~/Downloads/smtinterpol-2.5-1256-g55d6ba76.jar -no-success -w -q ";
+      case OPENSMT: return "opensmt";
+      case Z3: return "z3-4.7.1";
+      case SMTINTERPOL:
+        return "smtinterpol";
       default: std::runtime_error("unknown external interpolator");
       return "";
     }

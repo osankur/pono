@@ -206,33 +206,59 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
 }
 
 smt::Result ExternalInterpolator::get_interpolant(const smt::Term & A, const smt::Term & B, smt::Term & out_I) {
-  return smt::Result(smt::UNKNOWN);
-}
-
-smt::Result ExternalInterpolator::get_sequence_interpolants(const smt::TermVec & formulae, smt::TermVec & outInterpolants) {
   std::stringstream ss;
   smt::UnorderedTermSet symbols;
-  for (auto f : formulae){
-    get_free_symbols(f, symbols);
-  }
+  get_free_symbols(A, symbols);
+  get_free_symbols(B, symbols);
   // todo check that all symbols are either real or bool
   ss << "(set-option :produce-interpolants true)\n";
   ss << "(set-logic QF_LRA)\n";
   for (auto f : symbols){
     ss << "(declare-fun " << f << " () " << f->get_sort() << ")\n";    
   }
-  for (size_t i = 0; i < formulae.size(); i++){
-    ss << "(assert (! " << formulae[i] <<" :named f" << i << " ))\n";
-  }
+  ss << "(assert (! " << A <<" :named fa ))\n";
+  ss << "(assert (! " << B <<" :named fb ))\n";
   ss << "(check-sat)\n";
-  ss << "(get-interpolants ";
-  for (size_t i = 0; i < formulae.size(); i++){
-    ss << "f" << i << " ";
-  }
+  ss << "(get-interpolant fa fb)";
   ss << ")\n(exit)\n";
   std::string s = remove_to_real(ss.str()); 
-  return execute_query(s, symbols, outInterpolants);
+  smt::TermVec outInterpolants;
+  smt::Result r = execute_query(s, symbols, outInterpolants);
+  if (r == smt::UNSAT && outInterpolants.size() > 0){
+    out_I = outInterpolants.front();
+  } else {
+    throw PonoException("Call to external interpolator failed");
+  }
+  return r;
 }
 
-
+smt::Result ExternalInterpolator::get_sequence_interpolants(const smt::TermVec & formulae, smt::TermVec & outInterpolants) {
+  if (externalInterpolator_ == ExternalInterpolatorEnum::Z3){
+    // todo implement here an ad-hoc computation of sequence interpolants
+    throw PonoException("Z3 does not support sequence interpolants");
+  } else {
+    std::stringstream ss;
+    smt::UnorderedTermSet symbols;
+    for (auto f : formulae){
+      get_free_symbols(f, symbols);
+    }
+    // todo check that all symbols are either real or bool
+    ss << "(set-option :produce-interpolants true)\n";
+    ss << "(set-logic QF_LRA)\n";
+    for (auto f : symbols){
+      ss << "(declare-fun " << f << " () " << f->get_sort() << ")\n";    
+    }
+    for (size_t i = 0; i < formulae.size(); i++){
+      ss << "(assert (! " << formulae[i] <<" :named f" << i << " ))\n";
+    }
+    ss << "(check-sat)\n";
+    ss << "(get-interpolants ";
+    for (size_t i = 0; i < formulae.size(); i++){
+      ss << "f" << i << " ";
+    }
+    ss << ")\n(exit)\n";
+    std::string s = remove_to_real(ss.str()); 
+    return execute_query(s, symbols, outInterpolants);
+  }
+}
 }
