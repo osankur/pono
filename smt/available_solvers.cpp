@@ -133,6 +133,7 @@ SmtSolver create_solver_for(SolverEnum se,
     if (!full_model && e == IC3IA_ENGINE) {
       // only need boolean model
       opts["bool_model_generation"] = "true";
+      // the following must be set to true to generate witnesses with mathsat in non-bool systems
       opts["model_generation"] = "false";
       // Reasoning from open-source IC3IA code (by Alberto Griggio):
       // Turn off propagation of toplevel information. This is just overhead in
