@@ -80,7 +80,7 @@ shared_ptr<Prover> make_prover(Engine e,
 #ifdef WITH_MSAT
   with_msat = true;
 #endif 
-  if (with_msat || opts.use_external_opensmt_interpolator_){
+  if (with_msat || opts.external_interpolator_ != ExternalInterpolatorEnum::NONE){
     if (opts.rt_consistency_){
       return make_shared<IC3IAQ>(p, ts, slv, opts);
     } else {
@@ -88,7 +88,7 @@ shared_ptr<Prover> make_prover(Engine e,
     }    
   } else {
     throw PonoException(
-        "IC3IA uses MathSAT or external interpolator OpenSMT for interpolants, but not built with MathSAT");
+        "IC3IA needs MathSAT or an external interpolator for interpolants");
   }
 #ifdef WITH_MSAT_IC3IA
   } else if (e == MSAT_IC3IA) {

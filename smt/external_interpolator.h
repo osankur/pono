@@ -19,24 +19,27 @@ namespace pono{
 class ExternalInterpolator {
   public:
   /**
-   * @arg original_interpolator a solver for which the produced interpolants will be transferred.
+   * @arg original_interpolator a solver for which the produced interpolants will be transferred:
+   * \a get_interpolant and \a get_sequence_interpolants return terms for \a original_interpolator_
+   * @arg externalInterpolator 
   */
-  ExternalInterpolator(smt::SmtSolver & original_interpolator, ExternalInterpolatorEnum externalInterpolator = OPENSMT) 
+  ExternalInterpolator(smt::SmtSolver & original_interpolator, ExternalInterpolatorEnum externalInterpolator = ExternalInterpolatorEnum::OPENSMT) 
     : original_interpolator_(original_interpolator),
       solver_(create_solver(smt::CVC5)),
       to_original_interpolator_(original_interpolator),
       externalInterpolator_(externalInterpolator)
       {
-  }
+      }
   smt::Result get_interpolant(const smt::Term & A, const smt::Term & B, smt::Term & out_I);
   smt::Result get_sequence_interpolants(const smt::TermVec & formulae, smt::TermVec & outInterpolants);
-
+  ExternalInterpolatorEnum getSolverEnum() const {
+    return externalInterpolator_;
+  }
   std::string executable(){
     switch(externalInterpolator_){
-      case OPENSMT: return "opensmt";
-      case Z3: return "z3-4.7.1";
-      case SMTINTERPOL:
-        return "smtinterpol";
+      case ExternalInterpolatorEnum::OPENSMT: return "opensmt";
+      case ExternalInterpolatorEnum::Z3: return "z3-4.7.1";
+      case ExternalInterpolatorEnum::SMTINTERPOL: return "smtinterpol";
       default: std::runtime_error("unknown external interpolator");
       return "";
     }
@@ -45,6 +48,9 @@ class ExternalInterpolator {
   private:
     class InterpolantReader : public smt::SmtLibReader {
       public:
+      /**
+       * @pre all variable declarations in the given file \a filename must have been declared in solver.
+      */
       InterpolantReader(std::string filename, smt::SmtSolver solver) : smt::SmtLibReader(solver), interpolant_(nullptr){
         set_logic_all();
         int res = parse(filename);
@@ -58,9 +64,10 @@ class ExternalInterpolator {
           this->interpolant_ = term;
         }   
       }
-      void new_symbol(const std::string & name, const smt::Sort & sort){}
+      void new_symbol(const std::string & name, const smt::Sort & sort){
+        // disabled because all variables must already be declared in the given solver
+      }
       smt::Term get_interpolant(){
-        assert(interpolant_);
         return interpolant_;
       }
       private:
@@ -78,9 +85,10 @@ class ExternalInterpolator {
      * @pre symbols contains the set of free symbols appearing in query
      */
     smt::Result execute_query(std::string & query, const smt::UnorderedTermSet & symbols, smt::TermVec & outInterpolants);
+    // Solver towards which computed interpolants will be transferred 
     smt::SmtSolver & original_interpolator_;
+    // Fresh solver used for parsing the output of external solver
     smt::SmtSolver solver_;
-    // smt::TermTranslator to_solver_;
     smt::TermTranslator to_original_interpolator_;
     ExternalInterpolatorEnum externalInterpolator_;
 };

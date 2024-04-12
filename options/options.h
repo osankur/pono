@@ -46,7 +46,7 @@ enum Engine
   // used for setting solver options appropriately
 };
 
-enum ExternalInterpolatorEnum {
+enum class ExternalInterpolatorEnum {
   NONE = -1,
   OPENSMT,
   SMTINTERPOL,
@@ -75,12 +75,6 @@ const std::unordered_map<std::string, Engine> str2engine(
       { "ic3sa", IC3SA_ENGINE },
       { "sygus-pdr", SYGUS_PDR },
       { "ic3iaq", IC3IAQ_ENGINE } });
-
-const std::unordered_map<std::string, ExternalInterpolatorEnum> str2extinterpolator(
-    { { "opensmt", OPENSMT },
-      { "z3", Z3}
-    }
-);
 
 // SyGuS mode option
 enum SyGuSTermMode{

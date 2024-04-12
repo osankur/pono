@@ -25,7 +25,7 @@ IC3IAQ::IC3IAQ(const Property & p,
                    const SmtSolver & s,
                    PonoOptions opt
                    )
-    : IC3IA(p, ts, s, opt), external_interpolator_(interpolator_), use_external_interpolator_(opt.use_external_opensmt_interpolator_)
+     : IC3IA(p, ts, s, opt), external_interpolator_(interpolator_, opt.external_interpolator_)
 {
   logger.log(1, "Engine: IC3IAQ");
   engine_ = Engine::IC3IAQ_ENGINE;
@@ -100,7 +100,7 @@ void IC3IAQ::reconstruct_trace(const ProofGoal * pg, TermVec & out)
 RefineResult IC3IAQ::refine()
 {
   logger.log(1, "\nIC3IAQ::Refinemenent with {} steps\n", cex_.size());
-  // counterexample trace should have been populated
+  // counterexample trace must have been populated
   assert(cex_.size());
   // in the original ic3ia: bad_ is abstracted precisely: if there are no transitions, then this is a concrete CEX
   // but this is not the case for quantified properties
@@ -144,7 +144,7 @@ RefineResult IC3IAQ::refine()
   // 2)
   // use interpolator to get predicates
   // remember -- need to transfer between solvers
-  assert(interpolator_ || use_external_interpolator_);
+  assert(interpolator_ || external_interpolator_.getSolverEnum() != ExternalInterpolatorEnum::NONE);
 
   logger.log(3, "Checking BMC query + interpolants to cex.back()");
   TermVec formulae;
@@ -160,7 +160,7 @@ RefineResult IC3IAQ::refine()
   }
   TermVec out_interpolants;
   r = smt::ResultType::UNKNOWN;
-  if (use_external_interpolator_){
+  if (external_interpolator_.getSolverEnum() != ExternalInterpolatorEnum::NONE){
     r = external_interpolator_.get_sequence_interpolants(formulae, out_interpolants);
   } else {
     r =
@@ -201,7 +201,7 @@ RefineResult IC3IAQ::refine()
     //   std::cout << f << "\n";
     // }
     r = smt::ResultType::UNKNOWN;
-    if (use_external_interpolator_){
+    if (external_interpolator_.getSolverEnum() != ExternalInterpolatorEnum::NONE){
       r = external_interpolator_.get_sequence_interpolants(formulae, out_interpolants);
     } else {
       r =
@@ -241,7 +241,7 @@ RefineResult IC3IAQ::refine()
   }
 
   if (!fresh_preds.size()) {
-    logger.log(1, "IC3IA: refinement failed couldn't find any new predicates");
+    logger.log(1, "IC3IA: refinement failed: couldn't find any new predicates");
     return RefineResult::REFINE_FAIL;
   }
 

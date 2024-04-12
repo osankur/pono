@@ -280,12 +280,11 @@ RefineResult IC3IA::refine()
   TermVec out_interpolants;
   Result r = smt::ResultType::UNKNOWN;
 
-  if (options_.use_external_opensmt_interpolator_){
-    ExternalInterpolator o(interpolator_);
-    r = o.get_sequence_interpolants(formulae, out_interpolants);
+  if (options_.external_interpolator_ != ExternalInterpolatorEnum::NONE){
+    ExternalInterpolator extInterpolator(interpolator_, options_.external_interpolator_);
+    r = extInterpolator.get_sequence_interpolants(formulae, out_interpolants);
   } else {
-    r =
-      interpolator_->get_sequence_interpolants(formulae, out_interpolants);
+    r = interpolator_->get_sequence_interpolants(formulae, out_interpolants);
   }
 
   if (r.is_sat()) {

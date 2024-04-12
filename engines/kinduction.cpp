@@ -233,8 +233,8 @@ ProverResult KInduction::check_until(int k)
       kind_log_msg(1, "", "checking base case at bound: {}", i);
       res = solver_->check_sat_assuming(sel_assumption_);
       if (res.is_sat()) {
-	compute_witness();
-	return ProverResult::FALSE;
+	      compute_witness();
+	      return ProverResult::FALSE;
       }
     }
 

@@ -389,9 +389,10 @@ int main(int argc, char ** argv)
         cout << "sat" << endl;
         assert(pono_options.witness_ || cex.size() == 0);
         for (size_t t = 0; t < cex.size(); t++) {
-          cout << "AT TIME " << t << endl;
+          cout << "AT TIME " << t << endl;          
           for (auto elem : cex[t]) {
-            cout << "\t" << elem.first << " : " << elem.second << endl;
+            if (!rts->is_next_var(elem.first))
+              cout << "\t" << elem.first << " : " << elem.second << endl;
           }
         }
         assert(pono_options.witness_ || pono_options.vcd_name_.empty());

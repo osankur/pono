@@ -27,7 +27,6 @@ class IC3IAQ : public IC3IA
   RefineResult refine() override;
 
   private:
-  bool use_external_interpolator_;
   ExternalInterpolator external_interpolator_;
 };
 
