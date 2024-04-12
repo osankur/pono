@@ -4,10 +4,14 @@
 
 namespace pono{
 
-enum TimedAutomatonEncoding
+/**
+ * @brief Whether to allow arbitrarily long durations in [0,infty) (ArbitraryDurations) or
+ * all delays must be exactly 1 (UnitDurations)
+*/
+enum class TimedAutomatonDelays
 {
-    NonCompact,
-    Compact
+    ArbitraryDurations,
+    UnitDurations
 };
 
 /**
@@ -20,23 +24,29 @@ enum TimedAutomatonEncoding
  * There are two possible semantics:
  * - non-compact delays: each transition is either a delay, or a discrete step
  * - compact delays: each transition is a discrete step followed by a delay
- * 
+ * Both integer and real delay-semantics is possible. This is automatically detected
+ * by the sort of clock variables (Real or Int). By default, the sort is Real (e.g. if there no clocks).
  * @see TimedVMTEncoder
 */
 class TimedTransitionSystem : public RelationalTransitionSystem {
     public:
-    TimedTransitionSystem(const smt::SmtSolver & s) : 
+    TimedTransitionSystem(const smt::SmtSolver & s, TimedAutomatonDelays delay_type = TimedAutomatonDelays::ArbitraryDurations) : 
         RelationalTransitionSystem(s),
         solver_(s),
         locinvar_(solver_->make_term(true)),
         urgent_(solver_->make_term(false)),
         encoded_delays_(false),
-        has_dummy_init_transitions_(false)
+        has_dummy_init_transitions_(false),
+        delay_sort_(s->make_sort(smt::REAL)),
+        delay_type_(delay_type)
         {
         }
     static const std::string DELAY_VAR_NAME;
     static const std::string DUMMY_INIT_VAR_NAME;
 
+    TimedAutomatonDelays getDelayType() const {
+        return delay_type_;
+    }
     const smt::UnorderedTermSet & nonclock_vars() {
         return nonclock_vars_;
     }
@@ -69,7 +79,7 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
      * @pre locinvar() only contains upper bounds on clocks (when put in negation normal form)
      * @pre invar() does not contain clock variables
     */
-    void encode_timed_automaton_delays(const TimedAutomatonEncoding & encoding = TimedAutomatonEncoding::Compact);
+    void encode_timed_automaton_delays();
 
     protected:
     /**
@@ -112,6 +122,8 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
     smt::Term locinvar_;
     smt::Term urgent_;
     smt::Term delta_;
+    smt::Sort delay_sort_;
+    TimedAutomatonDelays delay_type_;
 
     bool encoded_delays_;
     bool has_dummy_init_transitions_;

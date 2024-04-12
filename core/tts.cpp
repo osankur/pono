@@ -7,18 +7,11 @@ using namespace smt;
 namespace pono {
 const std::string TimedTransitionSystem::DELAY_VAR_NAME = "_DELTA_";
 
-void TimedTransitionSystem::encode_timed_automaton_delays(
-    const TimedAutomatonEncoding & encoding)
+void TimedTransitionSystem::encode_timed_automaton_delays()
 {
   if (encoded_delays_) return;
   this->encoded_delays_ = true;
-  switch (encoding) {
-    case TimedAutomatonEncoding::Compact: 
-      encode_compact_delays();
-      break;
-    default:
-      throw std::runtime_error("Non-compact delays are not yet implemented");
-  }
+  encode_compact_delays();
 }
 
 void TimedTransitionSystem::add_dummy_init_transitions(){
@@ -38,9 +31,28 @@ void TimedTransitionSystem::add_dummy_init_transitions(){
 }
 
 void TimedTransitionSystem::encode_compact_delays(){
+  smt::Sort realsort = solver_->make_sort(smt::REAL);
+  smt::Sort intsort = solver_->make_sort(smt::INT);
+
+  // add a dummy edge to the init discrete location to allow delays at the beginning of an execution
   add_dummy_init_transitions();
-  smt::Sort realsort = solver_->make_sort(REAL);
-  delta_ = TransitionSystem::make_inputvar(DELAY_VAR_NAME, realsort);
+
+  // determine the sort of clocks (and thus that of delays): int or real
+  if (clock_vars_.size() > 0){
+    smt::Term clock = *clock_vars_.begin();
+    this->delay_sort_ = clock->get_sort();
+    if (this->delay_sort_ != realsort && this->delay_sort_ != intsort){
+      throw PonoException("Clocks must be of sort Int or Real: " + clock->to_string());
+    }
+    for (auto c : clock_vars_){
+      if ( c->get_sort() != this->delay_sort_){
+        throw PonoException("All clocks must have the same sort: "+ c->to_string());
+      }
+    }
+  }
+  delta_ = TransitionSystem::make_inputvar(DELAY_VAR_NAME, this->delay_sort_);
+  logger.log(3, "Are we considering timed automata with unit delays: {}", this->getDelayType() == TimedAutomatonDelays::UnitDurations);
+  logger.log(3, "Considering timed automata with clocks of sort: {}", this->delay_sort_);
   /*
      * T(C,X, I, C',X') =
      *    C >= 0 
@@ -49,8 +61,16 @@ void TimedTransitionSystem::encode_compact_delays(){
      * /\ (urgent(X') -> delta = 0) 
      * /\ (trans(C,X,I,C'-delta,X')
      * /\ locinvar(X',C')
+     * (/\ delta = 1) if UnitDurations
      */
-  smt::Term zero = solver_->make_term(To_Real, solver_->make_term("0", solver_->make_sort(INT)));
+  smt::Term zero, one;
+  if (delay_sort_->get_sort_kind() == smt::REAL) {
+    zero = solver_->make_term(To_Real, solver_->make_term("0", solver_->make_sort(INT)));
+    one = solver_->make_term(To_Real, solver_->make_term("1", solver_->make_sort(INT)));
+  } else {
+    zero = solver_->make_term("0", solver_->make_sort(INT));
+    one = solver_->make_term("1", solver_->make_sort(INT));
+  }
   smt::Term clocks_nonnegative = solver_->make_term(true);
   smt::Term clocks_are_zero = solver_->make_term(true);
   for (auto c : clock_vars_) {
@@ -62,8 +82,14 @@ void TimedTransitionSystem::encode_compact_delays(){
   logger.log(4, "TA Clock >= 0: {}", clocks_nonnegative);
   smt::Term new_trans = clocks_nonnegative;
 
-  smt::Term delta_nonnegative = solver_->make_term(Le, zero, delta_);
-  logger.log(4, "TA delta >= 0: {}", delta_nonnegative);
+  smt::Term delta_nonnegative;
+  if (this->delay_type_ == TimedAutomatonDelays::UnitDurations){
+    delta_nonnegative = solver_->make_term(Equal, one, delta_);
+  } else {
+    delta_nonnegative = solver_->make_term(Le, zero, delta_);
+  }  
+  logger.log(4, "TA delta >= 0 or delta=1: {}", delta_nonnegative);
+
   new_trans = solver_->make_term(And, new_trans, delta_nonnegative);
 
   smt::Term delta0ifurgent = 
@@ -80,8 +106,6 @@ void TimedTransitionSystem::encode_compact_delays(){
 
   new_trans = solver_->make_term(And, new_trans, locinvar());
   new_trans = solver_->make_term(And, new_trans, next(locinvar()));
-
-  // trans = discrete \/ time_elapse
   set_trans(new_trans);
   set_init(solver_->make_term(And, init(), clocks_are_zero));
   // init = init /\ C = 0

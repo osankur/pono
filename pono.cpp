@@ -343,15 +343,18 @@ int main(int argc, char ** argv)
 
     } else if (file_ext == "smv" || file_ext == "vmt" || file_ext == "smt2") {
       logger.log(2, "Parsing SMV/VMT file: {}", pono_options.filename_);
-      if (pono_options.timed_automaton_ && file_ext != "vmt"){
+      if ((pono_options.timed_automaton_ || pono_options.unit_timed_automaton_) && file_ext != "vmt"){
         throw PonoException("Timed automata are only supported in the .vmt format");
       }
 
       std::unique_ptr<RelationalTransitionSystem> rts = nullptr;
       TermVec propvec;
-      if (pono_options.timed_automaton_ && file_ext == "vmt"){
+      if ((pono_options.timed_automaton_ || pono_options.unit_timed_automaton_) && file_ext == "vmt"){
         // The timed automaton case
-        rts = std::make_unique<TimedTransitionSystem>(s);
+        TimedAutomatonDelays delay_type = TimedAutomatonDelays::ArbitraryDurations;        
+        if (pono_options.unit_timed_automaton_)
+          delay_type = TimedAutomatonDelays::UnitDurations;
+        rts = std::make_unique<TimedTransitionSystem>(s, delay_type);
         TimedVMTEncoder vmt_enc(pono_options.filename_, *dynamic_cast<TimedTransitionSystem*>(rts.get()));
         propvec = vmt_enc.propvec();
       } else {

@@ -94,6 +94,7 @@ enum optionIndex
   KIND_BOUND_STEP,
   RT_CONSISTENCY,
   TIMED_AUTOMATON,
+  UNIT_TIMED_AUTOMATON,
   EXTERNAL_INTERPOLATOR
 };
 
@@ -602,7 +603,14 @@ const option::Descriptor usage[] = {
     "ta",
     "timed-automaton",
     Arg::None,
-    "  --timed-automaton, -ta \tinterpret the input file as a timed automaton"
+    "  --timed-automaton, -ta \tinterpret the input file as a timed automaton either with real or int clocks depending on the sort of the clocks"
+    },
+  { UNIT_TIMED_AUTOMATON,
+    0,
+    "unit-ta",
+    "unit-timed-automaton",
+    Arg::None,
+    "  --unit-timed-automaton, -unit-ta \tinterpret the input file as a timed automaton with unit delays (all delays are 1 at each transition) either with real or int clocks depending on the sort of the clocks"
     },
   { EXTERNAL_INTERPOLATOR,
     0,
@@ -819,6 +827,7 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
           rt_consistency_mode_ = RTConsistencyMode(atoi(opt.arg));
           break;
         case TIMED_AUTOMATON: timed_automaton_ = true; break;
+        case UNIT_TIMED_AUTOMATON: unit_timed_automaton_ = true; break;
         case EXTERNAL_INTERPOLATOR: 
           if (opt.arg == std::string("z3")) {
             external_interpolator_ = ExternalInterpolatorEnum::Z3;
