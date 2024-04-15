@@ -25,6 +25,7 @@ class IC3IAQ : public IC3IA
   typedef IC3IA super;
   void reconstruct_trace(const ProofGoal * pg, smt::TermVec & out) override;
   RefineResult refine() override;
+  bool witness(std::vector<smt::UnorderedTermMap> & out) override;
 
   private:
   ExternalInterpolator external_interpolator_;

@@ -177,6 +177,8 @@ RefineResult IC3IAQ::refine()
     logger.log(3, "bad_ " + bad_->to_string());
     solver_->assert_formula(bad_);
     solver_->assert_formula(cex_.back());
+    // TODO here we need to add the invariant that clocks >= 0 
+
     r = solver_->check_sat();
     assert(r.is_sat());
     // build concrete state cube    
@@ -287,6 +289,65 @@ RefineResult IC3IAQ::refine()
   // able to refine the system to rule out this abstract counterexample
   return RefineResult::REFINE_SUCCESS;
 }
+
+bool IC3IAQ::witness(std::vector<smt::UnorderedTermMap> & out)
+{
+  assert(cex_.size());
+  push_solver_context();
+  for (size_t i = 0; i < cex_.size(); ++i) {
+    Term t = unroller_.at_time(cex_[i], i);
+    if (i + 1 < cex_.size()) {
+      t = solver_->make_term(And, t, unroller_.at_time(conc_ts_.trans(), i));
+    }
+    solver_->assert_formula(t);
+  }
+  Result r = solver_->check_sat();
+  assert(r.is_sat());
+  for (size_t i = 0; i < cex_.size(); ++i) {
+    smt::UnorderedTermMap s;
+    for (auto v : conc_ts_.statevars()){
+      s[v] = solver_->get_value(unroller_.at_time(v, i));
+    }
+    for (auto v : conc_ts_.inputvars()){
+      s[v] = solver_->get_value(unroller_.at_time(v, i));
+    }
+    out.push_back(s);
+  }
+  pop_solver_context();
+
+  // To explain the rt-consistency, we can enumerate here some successors of the last state
+  // push_solver_context();
+  // smt::Term last_term = solver_->make_term(true);
+  // for (auto v : conc_ts_.statevars()){
+  //   last_term = solver_->make_term(And, last_term, 
+  //       solver_->make_term(Equal, v, out.back()[v])
+  //     );
+  // }
+  // std::cout << "Last_term: " << last_term << "\n";
+  // solver_->assert_formula(unroller_.at_time(last_term, 0));
+  // solver_->assert_formula(unroller_.at_time(conc_ts_.trans(),0));
+  // for (int i = 0; i < 16 && solver_->check_sat() == smt::SAT; i++){
+  //   smt::Term blocking_clause = solver_->make_term(false);
+  //   std::cout << "Possible successor " << i << "\n";
+  //   for (auto v : conc_ts_.inputvars()){
+  //     std::cout << "\t" << v << " = " << 
+  //       solver_->get_value(unroller_.at_time(v, 0)) << "\n";
+  //     blocking_clause = 
+  //       solver_->make_term(Or, blocking_clause, 
+  //         solver_->make_term(Not, solver_->make_term(Equal, v, solver_->get_value(unroller_.at_time(v, 0))))
+  //       );
+  //   }
+  //   for (auto v : conc_ts_.statevars()){
+  //     std::cout << "\t" << v << " = " << 
+  //       solver_->get_value(unroller_.at_time(v, 1)) << "\n";
+  //   }
+  //   // std::cout << "blocking_clause : " << blocking_clause << "\n";
+  //   solver_->assert_formula(unroller_.at_time(blocking_clause, 0));
+  // }
+  // pop_solver_context();
+  return true;
+}
+
 
 
 }  // namespace pono

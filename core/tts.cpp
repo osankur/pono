@@ -51,8 +51,13 @@ void TimedTransitionSystem::encode_compact_delays(){
     }
   }
   delta_ = TransitionSystem::make_inputvar(DELAY_VAR_NAME, this->delay_sort_);
-  logger.log(3, "Are we considering timed automata with unit delays: {}", this->getDelayType() == TimedAutomatonDelays::UnitDurations);
-  logger.log(3, "Considering timed automata with clocks of sort: {}", this->delay_sort_);
+  logger.log(1, "Are we considering timed automata with unit delays: {}", this->getDelayType() == TimedAutomatonDelays::UnitDurations);
+  logger.log(1, "Considering timed automata with clocks of sort: {}", this->delay_sort_);
+  logger.log(2, "Listing timed automata clocks:");
+  for (auto c : clock_vars_){
+    logger.log(2, "\t{}", c);
+  }
+  
   /*
      * T(C,X, I, C',X') =
      *    C >= 0 
@@ -78,15 +83,20 @@ void TimedTransitionSystem::encode_compact_delays(){
       solver_->make_term(And, 
         clocks_are_zero, 
         solver_->make_term(Equal, c, zero));
+    clocks_nonnegative = 
+      solver_->make_term(And, 
+        clocks_nonnegative, 
+          solver_->make_term(Ge, c, zero)
+      );
   }
-  logger.log(4, "TA Clock >= 0: {}", clocks_nonnegative);
-  smt::Term new_trans = clocks_nonnegative;
+  smt::Term new_trans = solver_->make_term(And, clocks_nonnegative, next(clocks_nonnegative));
+  logger.log(4, "TA Clock >= 0: {}", new_trans);
 
   smt::Term delta_nonnegative;
-  if (this->delay_type_ == TimedAutomatonDelays::UnitDurations){
-    delta_nonnegative = solver_->make_term(Equal, one, delta_);
-  } else {
+  if (this->delay_type_ == TimedAutomatonDelays::ArbitraryDurations){
     delta_nonnegative = solver_->make_term(Le, zero, delta_);
+  } else {
+    delta_nonnegative = solver_->make_term(Equal, one, delta_);
   }  
   logger.log(4, "TA delta >= 0 or delta=1: {}", delta_nonnegative);
 

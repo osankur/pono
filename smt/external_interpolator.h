@@ -25,7 +25,6 @@ class ExternalInterpolator {
   */
   ExternalInterpolator(smt::SmtSolver & original_interpolator, ExternalInterpolatorEnum externalInterpolator = ExternalInterpolatorEnum::OPENSMT) 
     : original_interpolator_(original_interpolator),
-      solver_(create_solver(smt::CVC5)),
       to_original_interpolator_(original_interpolator),
       externalInterpolator_(externalInterpolator)
       {
@@ -64,9 +63,9 @@ class ExternalInterpolator {
           this->interpolant_ = term;
         }   
       }
-      void new_symbol(const std::string & name, const smt::Sort & sort){
+      // void new_symbol(const std::string & name, const smt::Sort & sort){
         // disabled because all variables must already be declared in the given solver
-      }
+      // }
       smt::Term get_interpolant(){
         return interpolant_;
       }
@@ -87,8 +86,6 @@ class ExternalInterpolator {
     smt::Result execute_query(std::string & query, const smt::UnorderedTermSet & symbols, smt::TermVec & outInterpolants);
     // Solver towards which computed interpolants will be transferred 
     smt::SmtSolver & original_interpolator_;
-    // Fresh solver used for parsing the output of external solver
-    smt::SmtSolver solver_;
     smt::TermTranslator to_original_interpolator_;
     ExternalInterpolatorEnum externalInterpolator_;
 };

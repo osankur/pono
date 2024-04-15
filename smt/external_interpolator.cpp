@@ -129,15 +129,17 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
     if (result.find("sat") != result.npos){
       return smt::Result(smt::SAT);
     } else throw std::runtime_error(executable() + " query failed with output: " + result);
-  } else {
+  } else   {
     // Add parantheses around negative numbers (opensmt prints these without parantheses)
     //    -N -> (- N)
     result = clean_negative_numbers(result);
     auto first_open_par = result.find_first_of("(");
     auto last_close_par = result.find_last_of(")");
     result = result.substr(first_open_par+1, last_close_par-first_open_par-1);
-    // std::cout << "Extracted interp: " << result << "\n";
+    std::cout << "Extracted interp: " << result << "\n";
 
+    // TODO this works for opensmt but smtinterpol outputs a one-line (and ...) formula where conjuncts are the interpolants...
+    //
     // split to lines (the stdlib has no function to do this ;-( ), and discard interpolants that are false or true
     std::string delimiter = "\n";
     size_t pos = 0;
@@ -146,9 +148,9 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
       std::string token = result.substr(0, pos);
       if (token.find("false") == token.npos && token.find("true") == token.npos){
         interpolants.push_back(token);
-        // std::cout << "adding interp: " << token << "\n";
+        std::cout << "adding interp: " << token << "\n";
       } else {
-        // std::cout << "ignoring: " << token << "\n";
+        std::cout << "ignoring: " << token << "\n";
       }
       result.erase(0, pos + delimiter.length());
     }
@@ -187,17 +189,15 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
     outfile.close();
     logger.log(2, "Wrote interpolant to file: " + tmpfilename);
 
-    // ExternalInterpolator::InterpolantReader interpolant_reader(tmpfilename, original_interpolator_);
-    // smt::Term conjunctive = interpolant_reader.get_interpolant();
-
-    ExternalInterpolator::InterpolantReader interpolant_reader(tmpfilename, solver_);
+    // We create a fresh temporary solver to read back the produced file as a workaround
+    smt::SmtSolver tmp_solver = create_solver(smt::CVC5);
+    ExternalInterpolator::InterpolantReader interpolant_reader(tmpfilename, tmp_solver);
     logger.log(2, ("parsed interpolant: " + interpolant_reader.get_interpolant()->to_string()));
+    // and then transfer the formula back to original_interpolator
     smt::Term conjunctive = to_original_interpolator_.transfer_term(interpolant_reader.get_interpolant());
     logger.log(2, ("transferred interpolant: "));
-    // smt::Term tmp = smt::TermTranslator(solver_).transfer_term(interpolant_reader.get_interpolant());
     logger.log(2, conjunctive->to_string());
-    // todo: when transferred, real constants become bitvectors...
-    //
+
     // We return a single formula which is the conjunction of all interpolants;
     // but it's ok since the refiner then just uses the predicates appearing in these
     outInterpolants.push_back(conjunctive);
