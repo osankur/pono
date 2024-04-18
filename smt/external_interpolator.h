@@ -76,6 +76,8 @@ class ExternalInterpolator {
     // Prepare the smt query by replacing (to_real N) -> N
     std::string remove_to_real(std::string query);
     std::string insert_to_real(std::string query);
+    // Remove all occurrences of 'false'
+    std::string remove_false(std::string query);
     // Replace -N -> (- N)
     std::string clean_negative_numbers(std::string query);
     /** 

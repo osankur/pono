@@ -73,6 +73,29 @@ std::string ExternalInterpolator::remove_to_real(std::string query) {
   return result;
 }
 
+std::string ExternalInterpolator::remove_false(std::string query) {
+  // remove all occurrences of 'false':
+  //   sed -r 's/false//g'
+  std::string result;
+  std::array<char, 128> buffer;
+
+  std::string tmpfilename = std::tmpnam(nullptr);
+  std::ofstream outfile(tmpfilename);
+  outfile << query;
+  outfile.close();
+
+  std::string cmd = "sed -r 's/false//g' " + tmpfilename;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  if (!pipe) {
+      throw std::runtime_error("popen() failed!");
+  }
+  while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr) {
+      result += buffer.data();
+  }
+  return result;
+}
+
+
 std::string ExternalInterpolator::insert_to_real(std::string query) {
   std::string result;
   std::array<char, 128> buffer;
@@ -82,7 +105,7 @@ std::string ExternalInterpolator::insert_to_real(std::string query) {
   outfile << query;
   outfile.close();
 
-  std::string cmd = "sed -r 's/ ([0-9]+)/ (to_real \\1)/g' " + tmpfilename;
+  std::string cmd = "sed -r 's/ ([0-9]+)(\\.0)?/ (to_real \\1)/g' " + tmpfilename;
   std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
   if (!pipe) {
       throw std::runtime_error("popen() failed!");
@@ -129,58 +152,23 @@ smt::Result ExternalInterpolator::execute_query(std::string & query, const smt::
     if (result.find("sat") != result.npos){
       return smt::Result(smt::SAT);
     } else throw std::runtime_error(executable() + " query failed with output: " + result);
-  } else   {
+  } else {
     // Add parantheses around negative numbers (opensmt prints these without parantheses)
     //    -N -> (- N)
     result = clean_negative_numbers(result);
     auto first_open_par = result.find_first_of("(");
     auto last_close_par = result.find_last_of(")");
     result = result.substr(first_open_par+1, last_close_par-first_open_par-1);
-    std::cout << "Extracted interp: " << result << "\n";
+    result = remove_false(result);
+    // std::cout << "Extracted interp: " << result << "\n";
 
-    // TODO this works for opensmt but smtinterpol outputs a one-line (and ...) formula where conjuncts are the interpolants...
-    //
-    // split to lines (the stdlib has no function to do this ;-( ), and discard interpolants that are false or true
-    std::string delimiter = "\n";
-    size_t pos = 0;
-    std::vector<std::string> interpolants;
-    while ((pos = result.find(delimiter)) != std::string::npos) {
-      std::string token = result.substr(0, pos);
-      if (token.find("false") == token.npos && token.find("true") == token.npos){
-        interpolants.push_back(token);
-        std::cout << "adding interp: " << token << "\n";
-      } else {
-        std::cout << "ignoring: " << token << "\n";
-      }
-      result.erase(0, pos + delimiter.length());
-    }
-    if (result.find("false") == result.npos && result.find("true") == result.npos){
-      interpolants.push_back(result);
-    }
-
-    // gather these into a single conjunctive formula
-    //  (avoid the and if there is a single formula)
-    assert(interpolants.size() > 0);
-    if (interpolants.size() == 1){
-      result = interpolants[0];
-    } else {
-      std::stringstream ss;
-      ss << "(and \n";
-      for (auto f : interpolants){
-        ss << "\t" << f << "\n";
-      }
-      ss << ")\n";
-      result = ss.str();
-    }
-    // std::cout << "combined interpolant: " << result << "\n";
-
-    // and by putting the formula in a define-fun with attribute interpolant as follows
+    // make a conjunction out of the list of interpolants
+    result = "(and true " + result + ")";
+    // and put the formula in a define-fun with attribute interpolant as follows
     //     (define-fun inter() Bool (! FORMULA :interpolant true))
     result = "(define-fun inter() Bool (! " + result + " :interpolant true))";
-    // result = "(define-fun inter() Bool (! " + result + " :trans true))";
     std::string tmpfilename = std::tmpnam(nullptr) + std::string(".smt2");
     std::ofstream outfile(tmpfilename);
-    // outfile << "(set-logic QF_LRA)\n";
     for (auto f : symbols){
       outfile << "(declare-fun " << f << " () " << f->get_sort() << ")\n";
     }
