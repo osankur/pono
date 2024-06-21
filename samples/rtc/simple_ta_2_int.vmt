@@ -1,10 +1,10 @@
 ;; Timed automaton with two locations, 2 clocks.
 ;;
 
-(declare-fun x__AT0 () Real)
-(declare-fun x__AT1 () Real)
-(declare-fun y__AT0 () Real)
-(declare-fun y__AT1 () Real)
+(declare-fun x__AT0 () Int)
+(declare-fun x__AT1 () Int)
+(declare-fun y__AT0 () Int)
+(declare-fun y__AT1 () Int)
 (declare-fun loc__AT0 () Bool)
 (declare-fun loc__AT1 () Bool)
 
@@ -15,17 +15,17 @@
 (declare-fun err2_n () Bool)
 
 
-(define-fun .def_0 () Real (! x__AT0 :nextclock x__AT1))
-(define-fun .def_1 () Real (! y__AT0 :nextclock y__AT1))
-(define-fun .def_2 () Real (! loc__AT0 :next loc__AT1))
-(define-fun .def_err1 () Real (! err1 :next err1_n))
-(define-fun .def_err2 () Real (! err2 :next err2_n))
+(define-fun .def_0 () Int (! x__AT0 :nextclock x__AT1))
+(define-fun .def_1 () Int (! y__AT0 :nextclock y__AT1))
+(define-fun .def_2 () Int (! loc__AT0 :next loc__AT1))
+(define-fun .def_err1 () Int (! err1 :next err1_n))
+(define-fun .def_err2 () Int (! err2 :next err2_n))
 
 
 ;; Initial state
 (define-fun .def_3 () Bool (! (and
-(= x__AT0 (to_real 0))
-(= y__AT0 (to_real 0))
+(= x__AT0 0)
+(= y__AT0 0)
 loc__AT0
 (not err1)
 (not err2)
@@ -33,23 +33,23 @@ loc__AT0
 
 ;; Location invariant
 (define-fun .def_4 () Bool (!
-    (<= x__AT0 (to_real 3))
+    (<= x__AT0 3)
 :locinvar true))
 
 ;; Transitions
 (define-fun .def_18 () Bool (! (or
 
   (and (not err1) (not err2) loc__AT0 (and
-    (= x__AT1 (to_real 0))
+    (= x__AT1 0)
     (= y__AT0 y__AT1)
     (not loc__AT1)
     (not err1_n) (not err2_n) 
     )
   )
   (and (not err1) (not err2)  (not loc__AT0) (and
-    (>= x__AT0 (to_real 10))
-    (= x__AT1 (to_real 0))
-    (= y__AT1 (to_real 0))
+    (>= x__AT0 3)
+    (= x__AT1 0)
+    (= y__AT1 0)
     loc__AT1
     (not err1_n) (not err2_n) 
     )

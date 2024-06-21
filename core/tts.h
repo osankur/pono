@@ -14,6 +14,27 @@ enum class TimedAutomatonDelays
     UnitDurations
 };
 
+
+/**
+ * if Strict, all delays are > 0; otherwise >=0.
+*/
+enum class TADelayStrictness
+{
+    Strict,
+    Weak
+};
+
+std::string to_string(TADelayStrictness strictness);
+
+/**
+ * @brief In the DelayFirst semantics, a single step is made of a delay + edge.
+ * In the DelaySecond semantics, we take an edge first, and delay afterwards
+*/
+enum class TADelayEdgeOrder {
+    DelayFirst,
+    DelaySecond
+};
+
 /**
  * Relational transition relation encoding timed automata semantics.
  * The encoding is built in two steps: first, from the input VMT file,
@@ -30,7 +51,11 @@ enum class TimedAutomatonDelays
 */
 class TimedTransitionSystem : public RelationalTransitionSystem {
     public:
-    TimedTransitionSystem(const smt::SmtSolver & s, TimedAutomatonDelays delay_type = TimedAutomatonDelays::ArbitraryDurations) : 
+    TimedTransitionSystem(const smt::SmtSolver & s, 
+        TimedAutomatonDelays delay_type = TimedAutomatonDelays::ArbitraryDurations,
+        TADelayEdgeOrder edge_order = TADelayEdgeOrder::DelayFirst,
+        TADelayStrictness strictness = TADelayStrictness::Strict
+        ) : 
         RelationalTransitionSystem(s),
         solver_(s),
         locinvar_(solver_->make_term(true)),
@@ -38,7 +63,9 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
         encoded_delays_(false),
         has_dummy_init_transitions_(false),
         delay_sort_(s->make_sort(smt::REAL)),
-        delay_type_(delay_type)
+        delay_type_(delay_type),
+        delay_edge_order_(edge_order),
+        delay_strictness_(strictness)
         {
         }
     static const std::string DELAY_VAR_NAME;
@@ -72,7 +99,6 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
     void add_urgent(const smt::Term & u){
         urgent_ = solver_->make_term(smt::Or, urgent(), u);
     }
-
     /**
      * Redefine the transition relation by adding delays
      * @pre urgent() only contains nonclock variables
@@ -92,6 +118,7 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
      * /\ (trans \/ (C'=C+delta)) 
      * /\ locinvar'
      * 
+     * Currently not implemented
     */
     void encode_noncompact_delays();
 
@@ -124,6 +151,8 @@ class TimedTransitionSystem : public RelationalTransitionSystem {
     smt::Term delta_;
     smt::Sort delay_sort_;
     TimedAutomatonDelays delay_type_;
+    TADelayEdgeOrder delay_edge_order_;
+    TADelayStrictness delay_strictness_;
 
     bool encoded_delays_;
     bool has_dummy_init_transitions_;

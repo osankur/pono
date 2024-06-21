@@ -174,7 +174,7 @@ RefineResult IC3IAQ::refine()
     //       refine using interpolants on query /\ s
     push_solver_context();
     logger.log(3, "cex.back(): " + cex_.back()->to_string());
-    logger.log(3, "bad_ " + bad_->to_string());
+    logger.log(3, "bad_: " + bad_->to_string());
     solver_->assert_formula(bad_);
     solver_->assert_formula(cex_.back());
     // TODO here we need to add the invariant that clocks >= 0 
@@ -197,6 +197,7 @@ RefineResult IC3IAQ::refine()
 
     // Now start interpolation again:
     formulae.pop_back();
+
     formulae.push_back(to_interpolator_.transfer_term(s, BOOL));
     // std::cout << "Calling interpolation again for:\n";
     // for (auto f : formulae) {

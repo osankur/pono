@@ -22,6 +22,7 @@
 
 #include "core/proverresult.h"
 #include "smt-switch/smt.h"
+#include "core/tts.h"
 
 namespace pono {
 
@@ -167,6 +168,8 @@ class PonoOptions
         rt_consistency_(default_rt_consistency_),
         rt_consistency_mode_(default_rt_consistency_mode_),
         timed_automaton_(default_timed_automaton_),
+        timed_automaton_delay_strictness_(default_timed_automaton_delay_strictness_),
+        timed_automaton_edge_order_(default_timed_automaton_edge_order_),
         unit_timed_automaton_(default_unit_timed_automaton_),
         external_interpolator_(default_external_interpolator_),
         interpolator_(default_interpolator_)
@@ -216,6 +219,9 @@ class PonoOptions
   RTConsistencyMode rt_consistency_mode_;
   bool timed_automaton_;
   bool unit_timed_automaton_;
+  TADelayStrictness timed_automaton_delay_strictness_;
+  TADelayEdgeOrder timed_automaton_edge_order_;
+
   // ic3 options
   bool ic3_pregen_;  ///< generalize counterexamples in IC3
   bool ic3_indgen_;  ///< inductive generalization in IC3
@@ -388,6 +394,8 @@ private:
   static const RTConsistencyMode default_rt_consistency_mode_ = RTConsistencyMode::STATIC;
   static const bool default_timed_automaton_ = false;
   static const bool default_unit_timed_automaton_ = false;
+  static const TADelayStrictness default_timed_automaton_delay_strictness_ = TADelayStrictness::Strict;
+  static const TADelayEdgeOrder default_timed_automaton_edge_order_ = TADelayEdgeOrder::DelayFirst; 
   static const ExternalInterpolatorEnum default_external_interpolator_ = ExternalInterpolatorEnum::NONE;
   static const smt::SolverEnum default_interpolator_ = smt::MSAT;
 };

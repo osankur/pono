@@ -20,7 +20,7 @@
 #include <vector>
 #include "optionparser.h"
 #include "utils/exceptions.h"
-
+#include "core/tts.h"
 using namespace std;
 
 /************************************* Option Handling setup
@@ -95,6 +95,8 @@ enum optionIndex
   RT_CONSISTENCY,
   TIMED_AUTOMATON,
   UNIT_TIMED_AUTOMATON,
+  TIMED_AUTOMATON_DELAY_FIRST,
+  TIMED_AUTOMATON_STRICT_DELAYS,
   EXTERNAL_INTERPOLATOR
 };
 
@@ -612,6 +614,21 @@ const option::Descriptor usage[] = {
     Arg::None,
     "  --unit-timed-automaton, -unit-ta \tinterpret the input file as a timed automaton with unit delays (all delays are 1 at each transition) either with real or int clocks depending on the sort of the clocks"
     },
+  { TIMED_AUTOMATON_STRICT_DELAYS,
+    0,
+    "",
+    "strict-delays",
+    Arg::Numeric,
+    "  --strict-delays \ttimed automata semantics with strictly positive delays"
+    },
+  { TIMED_AUTOMATON_DELAY_FIRST,
+    0,
+    "",
+    "delay-first",
+    Arg::Numeric,
+    "  --delay-first \ttimed automata semantics with strictly positive delays"
+    },
+      
   { EXTERNAL_INTERPOLATOR,
     0,
     "opensmt",
@@ -827,6 +844,24 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
           rt_consistency_mode_ = RTConsistencyMode(atoi(opt.arg));
           break;
         case TIMED_AUTOMATON: timed_automaton_ = true; break;
+        case TIMED_AUTOMATON_STRICT_DELAYS: 
+          switch (atoi(opt.arg)){
+            case 0: 
+              timed_automaton_delay_strictness_ = TADelayStrictness::Weak;
+              break;
+            default:
+              timed_automaton_delay_strictness_ = TADelayStrictness::Strict;
+          }
+          break;
+        case TIMED_AUTOMATON_DELAY_FIRST: 
+          switch (atoi(opt.arg)){
+            case 0: 
+              timed_automaton_edge_order_ = TADelayEdgeOrder::DelaySecond;
+              break;
+            default:
+              timed_automaton_edge_order_ = TADelayEdgeOrder::DelayFirst;
+          }        
+          break;
         case UNIT_TIMED_AUTOMATON: unit_timed_automaton_ = true; break;
         case EXTERNAL_INTERPOLATOR: 
           if (opt.arg == std::string("z3")) {

@@ -135,6 +135,7 @@ ProverResult check_prop(PonoOptions pono_options,
     logger.log(3, "Quantified property: {} ", p.prop());
   }
 
+  
   // end modification of the transition system and property
 
   Engine eng = pono_options.engine_;
@@ -354,9 +355,23 @@ int main(int argc, char ** argv)
         TimedAutomatonDelays delay_type = TimedAutomatonDelays::ArbitraryDurations;        
         if (pono_options.unit_timed_automaton_)
           delay_type = TimedAutomatonDelays::UnitDurations;
-        rts = std::make_unique<TimedTransitionSystem>(s, delay_type);
-        TimedVMTEncoder vmt_enc(pono_options.filename_, *dynamic_cast<TimedTransitionSystem*>(rts.get()));
+        rts = std::make_unique<TimedTransitionSystem>(s, delay_type, pono_options.timed_automaton_edge_order_, pono_options.timed_automaton_delay_strictness_);
+        TimedTransitionSystem & tts = *dynamic_cast<TimedTransitionSystem*>(rts.get());
+        TimedVMTEncoder vmt_enc(pono_options.filename_, tts);
         propvec = vmt_enc.propvec();
+
+        // Check if property contains clocks (currently, this is the only place where we have access to properties and to timed automata view)
+        if (pono_options.timed_automaton_edge_order_ == TADelayEdgeOrder::DelayFirst){
+          for (int i = 0; i < propvec.size(); i++){
+            smt::UnorderedTermSet free_vars;
+            get_free_symbols(propvec[i], free_vars);
+            for (auto v : free_vars){
+              if (tts.clock_vars().find(v) != tts.clock_vars().end()){
+                throw PonoException("Properties cannot contain clock constraints when using the delay-first timed automata semantics. See property " + std::to_string(i) + ".");
+              }
+            }
+          }
+        }
       } else {
         // The standard (non-timed automaton) case
         rts = std::make_unique<RelationalTransitionSystem>(s);
