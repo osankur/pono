@@ -101,13 +101,13 @@ IC3IA with external smtinterpol interpolator
   unsat
   [1]
 Pono rejects timed automaton files with properties that contain clock constraints in the (default) delay-first semantics:
-  $ pono -e bmc --smt-solver cvc5 -ta -p 0 --witness --delay-first 1 $PONO/samples/rtc/simple_ta_4.vmt  
+  $ pono -e bmc --smt-solver cvc5 -ta -p 0 --witness --delay-first 1 $PONO/samples/rtc/simple_ta_3.vmt  
   terminate called after throwing an instance of 'PonoException'
     what():  Properties cannot contain clock constraints when using the delay-first timed automata semantics. See property 0
   Aborted (core dumped)
   [134]
 However, the same file is accepted in the delay-second semantics:
-  $ pono -e bmc --smt-solver cvc5 -ta -p 0 --witness --delay-first 0 $PONO/samples/rtc/simple_ta_4.vmt
+  $ pono -e bmc --smt-solver cvc5 -ta -p 0 --witness --delay-first 0 $PONO/samples/rtc/simple_ta_3.vmt
   Property 0 is FALSE
   sat
   AT TIME 0
