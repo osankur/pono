@@ -367,6 +367,11 @@ int main(int argc, char ** argv)
             get_free_symbols(propvec[i], free_vars);
             for (auto v : free_vars){
               if (tts.clock_vars().find(v) != tts.clock_vars().end()){
+                logger.log(1, "Property {}: {}", i, propvec[i]);
+                logger.log(1, "Free vars");
+                for (auto v : free_vars){
+                  logger.log(1, "{}", v);
+                }
                 throw PonoException("Properties cannot contain clock constraints when using the delay-first timed automata semantics. See property " + std::to_string(i) + ".");
               }
             }

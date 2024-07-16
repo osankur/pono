@@ -1,5 +1,5 @@
 Run these tests with
-PONO=/home/osankur/tools/pono cram -i ta.t
+PONO="path_to_pono" cram -i ta.t
 Testing simple reachability queries  
   $ pono -e bmc --smt-solver cvc5 -ta -p 0 --witness $PONO/samples/rtc/simple_ta_2.vmt
   Property 0 is FALSE

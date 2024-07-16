@@ -619,14 +619,14 @@ const option::Descriptor usage[] = {
     "",
     "strict-delays",
     Arg::Numeric,
-    "  --strict-delays \ttimed automata semantics with strictly positive delays"
+    "  --strict-delays \ttimed automata semantics with strictly positive delays (default: true)"
     },
   { TIMED_AUTOMATON_DELAY_FIRST,
     0,
     "",
     "delay-first",
     Arg::Numeric,
-    "  --delay-first \ttimed automata semantics with strictly positive delays"
+    "  --delay-first \ttimed automata semantics with strictly positive delays (default: true)"
     },
       
   { EXTERNAL_INTERPOLATOR,
@@ -634,7 +634,7 @@ const option::Descriptor usage[] = {
     "opensmt",
     "external-interpolator",
     Arg::NonEmpty,
-    "  --external-interpolator, \tuse light-weight interface to external interpolator (opensmt, z3, smtinterpol). Only valid for the ic3iaq engine. "
+    "  --external-interpolator, \tuse light-weight interface to external interpolator (opensmt, z3, smtinterpol). Only valid for the ic3ia engine. "
     },    
   { INTERPOLATOR,
     0,

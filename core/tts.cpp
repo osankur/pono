@@ -62,7 +62,7 @@ void TimedTransitionSystem::encode_compact_delays(){
   logger.log(1, "Unit delays: {}", this->getDelayType() == TimedAutomatonDelays::UnitDurations);
   logger.log(1, "Delays are strict: {}", this->delay_strictness_ == TADelayStrictness::Strict);
   logger.log(1, "Delay-First: {}", this->delay_edge_order_ == TADelayEdgeOrder::DelayFirst);
-  logger.log(1, "Listing timed automata clocks:");
+  logger.log(2, "Listing timed automata clocks:");
   for (auto c : clock_vars_){
     logger.log(2, "\t{}", c);
   }
@@ -71,8 +71,7 @@ void TimedTransitionSystem::encode_compact_delays(){
     logger.log(1, "Adding dummy initial transition (this allows starting the run with a delay)");
     // add a dummy edge to the init discrete location to allow delays at the beginning of an execution
     add_dummy_init_transitions();
-  } else {
-  }
+  } 
 
 
   smt::Term zero, one;
