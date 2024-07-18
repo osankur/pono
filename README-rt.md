@@ -4,9 +4,11 @@ This fork contains an extension of Pono for real-time:
 - Algorithms to check rt-consistency which means checking whether a state satisfying `prop /\ (AX not prop)` is reachable.
 (The system is rt-consistent if no such state is reachable).
 
-Currently, this is supported within the engines BMC, IND, and IC3IA via a small variant supporting quantified properties and custom interpolators.
+Currently, this is supported either by eliminating quantifiers and then using any engine, or keeping the property quantified within engines BMC, IND, and IC3IA via a small variant supporting quantified properties and custom interpolators.
 
 Note that recent versions of Mathsat are not currently compatible with Pono. Please use version 5.6.4
+
+The installation script of this fork uses a fork of smt-switch with several bug fixes and support for quantifier elimination.
 
 ## Timed Automata
 Timed automata are encoded in the [VMT](https://vmt-lib.fbk.eu/) format as used in the nuXmv tool. In addition to
@@ -24,7 +26,7 @@ Clocks variables can be declared either as Real or Int, but all clocks must be o
 The semantics considered by Pono is the following: each atomic step is a combination of a discrete transition, followed by an arbitrary delay.
 (A dummy edge is added at initial locations to allow starting the run with a delay).
 
-The timed automaton semantics is built upon the given input `.vmt` file when option `-ta` is given.
+The timed automaton semantics is built from the given input `.vmt` file when option `-ta` is given.
 One needs to use an SMT solver supporting linear theory of reals e.g. cvc5.
 For instance,
 
@@ -51,12 +53,13 @@ This is activated with option `-ta-unit`. For instance,
     pono -e ind --smt-solver cvc5 -ta-unit --witness samples/rtc/simple_ta_2_int.vmt
 
 Here, no counterexample is found since it is not possible to violate the property by taking discrete transitions with unit delays.
+Note that unit-delay semantics is slower to analyze in general because it generates a great number of disctinct intermediate states.
 
 ## Checking RT-Consistency
 RT-Consistency check is relevant both for Boolean systems and timed automata.
 Three engines can be used to check rt-consistency: bmc, ind, and ic3ia.
 
-BMC or k-induction can be used out of the box using a solver supporting quantifiers (CVC5).
+BMC or k-induction can be used out of the box using a solver supporting quantifiers (such as CVC5).
 Specifying the `--rt-consistency` option will rewrite the property `P` given in the input file as 
 
     Qprop = ~(P(X) /\ ∀ Y. ∀I. T(X, I, Y) -> ~P(Y))
@@ -71,14 +74,14 @@ The BMC and k-induction algorithms can be run to check rt-consistency with the d
     pono -e ind --smt-solver cvc5 --rt-consistency 1 --witness samples/rtc/sample_inconsistent.smv
 
 Use --rt-consistency 0 for the static algorithm.
-Note that the k-induction engine does not scale to larger models (because it creates k copies of Qprop to check k-inductiveness, which is hard to solve).
+Note that the k-induction engine does not scale to larger models (because it creates k copies of Qprop to check k-inductiveness, which becomes hard to solve).
 
 The tool answers `unsat` if there is no inconsistency (~Qprop is not reachable),
 `sat` if it finds a counterexample, and `unknown` otherwise.
 Note that the BMC answers Unknown above since it can only detect counterexamples.
 
 The ic3ia engine can be used to check rt-consistency statically provided that an smt-solver with quantifier elimination is provided.
-The default interpolator is msat:
+The default interpolator is msat (see below to use open-source interpolators)
 
     pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 samples/rtc/sample_consistent.smv
     pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 --witness samples/rtc/sample_inconsistent.smv
@@ -97,8 +100,7 @@ RT-consistency of timed automata, using both algorithms:
     pono -e ic3ia --smt-solver cvc5 -ta --rt-consistency 0 samples/rtc/simple_ta.vmt
 
 ## Deadlocks as RT-Inconsistencies
-A side-effect of our rt-consistency formula is that any deadlock (that is, a reachable state with no outgoing transition) is considered an rt-inconsistency
-since such a state (valuation over X) satisfies `∀ Y. ∀I. T(X, I, Y) -> ~P(Y)`.
+A side-effect of the rt-consistency check is that any deadlock (that is, a reachable state with no outgoing transition) is considered an rt-inconsistency since such a state (valuation over X) satisfies `∀ Y. ∀I. T(X, I, Y) -> ~P(Y)`. So one must be careful to avoid deadlocks in the model or make sure they are intended.
 
 ## IC3IA with external interpolators
 If MathSAT is not available, there is support for the following interpolators which are free software: opensmt, smtinterpoal.
@@ -107,16 +109,42 @@ These can be installed by using the scripts `contrib/setup_opensmt.sh` and `cont
     pono -e ic3ia --smt-solver cvc5 -ta --external-interpolator opensmt samples/rtc/simple_ta.vmt
     pono -e ic3ia --smt-solver cvc5 -ta --external-interpolator smtinterpol samples/rtc/simple_ta.vmt
 
-The support is rather fragile due to the incomplete smtlib parser of Pono and inconsistencies between the use of this format among different solvers.  For instance, Pono does not parse real numbers (such as 1.0) in the smt files; these must be given as (to_real 1). There is a workaround but it will fail for a number such as 1.2.
+The support is rather fragile due to the incomplete smtlib parser of Pono and inconsistencies between the use of this format among different solvers. For instance, Pono cannot parse real numbers (such as 1.0) in the smt files; these must be given as (to_real 1). There is a workaround but it will fail for a number such as 1.2.
 
 ## Installation
-The following packages are required for compilation to succeed
+Installation instructions follow those in the main [README](README) with a few more details.
 
+The following packages are required for the compilation to succeed on Ubuntu 22.04:
 - flex, bison
 - libbison-dev
 - libgmp-dev
-- Cython
-- pip3 install toml scikit
+- build-essential python3-dev
+- pip3 install toml scikit-learn
+
+Install first custom smt solvers and the smt-switch interface. 
+
+    cd contrib
+    ./setup-smtinterpol.sh
+    ./setup-opensmt.sh
+    ./contrib/setup-btor2tools.sh
+
+If you have MathSAT version 5.6.4, extract it to `deps/mathsat`, and run
+
+    ./setup-smt-switch.sh --with-msat
+
+To compile without MathSAT, just run
+
+    ./setup-smt-switch.sh
+    
+Then
+
+    cd ..
+    ./configure.sh
+
+If building with mathsat, also include `--with-msat` as an option to `configure.sh`.
+
+    cd build
+    make 
 
 ## Testing
 To compile the tests uncomment the following lines in CMakeLists.txt
@@ -125,3 +153,7 @@ To compile the tests uncomment the following lines in CMakeLists.txt
     add_subdirectory(tests)
 
 Then `./build/tests/test_ta` tests timed automata semantics.
+
+The following cram test file contains all examples in this readme:
+
+    tests/cram/ta.t
