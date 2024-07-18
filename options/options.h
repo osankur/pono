@@ -397,7 +397,7 @@ private:
   static const TADelayStrictness default_timed_automaton_delay_strictness_ = TADelayStrictness::Strict;
   static const TADelayEdgeOrder default_timed_automaton_edge_order_ = TADelayEdgeOrder::DelayFirst; 
   static const ExternalInterpolatorEnum default_external_interpolator_ = ExternalInterpolatorEnum::NONE;
-  static const smt::SolverEnum default_interpolator_ = smt::MSAT;
+  static const smt::SolverEnum default_interpolator_ = smt::CVC5_INTERPOLATOR;
 };
 
 // Useful functions for printing etc...
