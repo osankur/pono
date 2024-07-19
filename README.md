@@ -1,166 +1,159 @@
-[![CI](https://github.com/upscale-project/pono/actions/workflows/ci.yml/badge.svg)](https://github.com/upscale-project/pono/actions/workflows/ci.yml)
+# Pono Real-Time
+This fork of Pono contains a `real-time' extension of Pono:
+- A .vmt front-end for timed automata
+- Algorithms to check real-time-consistency (rt-consistenct) which means checking whether a state satisfying `prop /\ (AX not prop)` is reachable.
+(The system is rt-consistent if no such state is reachable).
 
-# Pono: A Flexible and Extensible SMT-Based Model Checker
-Pono is a performant, adaptable, and extensible SMT-based model checker implemented in C++. It leverages [Smt-Switch](https://github.com/makaimann/smt-switch), a generic C++ API for SMT solving. Pono was developed as the next
-generation of [CoSA](https://github.com/cristian-mattarei/CoSA) and thus was originally named _cosa2_.
+Currently, this is supported either by eliminating quantifiers and then using any engine, or keeping the property quantified within engines BMC, IND, and IC3IA via a small variant supporting quantified properties and custom interpolators.
 
-[Pono](http://wehewehe.org/gsdl2.85/cgi-bin/hdict?e=q-11000-00---off-0hdict--00-1----0-10-0---0---0direct-10-ED--4--textpukuielbert%2ctextmamaka-----0-1l--11-en-Zz-1---Zz-1-home-pono--00-3-1-00-0--4----0-0-11-10-0utfZz-8-00&a=d&d=D18537) is the Hawaiian word for proper, correct, or goodness. It is often used colloquially in the moral sense of "goodness" or "rightness," but also refers to "proper procedure" or "correctness." We use the word for multiple meanings. Our goal is that Pono can be a useful tool for people to verify the _correctness_ of systems, which is surely the _right_ thing to do.
+Note that recent versions of Mathsat are not currently compatible with Pono. Please use version 5.6.4
 
-## Publications
+The installation script of this fork uses a fork of smt-switch with several bug fixes and support for quantifier elimination.
 
-* Makai Mann, Ahmed Irfan, Florian Lonsing, Yahan Yang, Hongce Zhang, Kristopher Brown, Aarti Gupta, Clark W. Barrett: [Pono: A Flexible and Extensible SMT-Based Model Checker](https://link.springer.com/chapter/10.1007/978-3-030-81688-9_22). CAV 2021.
-  * Evaluated [software artifact](https://figshare.com/articles/software/CAV_2021_Artifact_Pono_Model_Checker/14479542).
-* Makai Mann, Amalee Wilson, Yoni Zohar, Lindsey Stuntz, Ahmed Irfan, Kristopher Brown, Caleb Donovick, Allison Guman, Cesare Tinelli, Clark W. Barrett: [Smt-Switch: A Solver-Agnostic C++ API for SMT Solving](https://link.springer.com/chapter/10.1007/978-3-030-80223-3_26). SAT 2021.
-* Makai Mann: [Augmenting transition systems for scalable symbolic model checking](https://searchworks.stanford.edu/view/13972018). PhD thesis, Stanford University, 2021.
+## Timed Automata
+Timed automata are encoded in the [VMT](https://vmt-lib.fbk.eu/) format as used in the nuXmv tool. In addition to
+a regular VMT file, the input file specifies clocks (any variable for which the attribute `:nextclock` is used is a clock),
+location invariants (with the `:locinvar` attribute), and urgent loctations (`:urgent`).
 
-## Awards
+- `locinvar` defines the location invariant. In case of multiple occurrences, the conjunction of all is the invariant.
+A locinvar expression can only use current variables. (TODO add a check)
+- `urgent` defines the set of states where time cannot elapse. In case of multiple occurrences, the disjunction of all is the set of urgent states. An urgent expression can only use current nonclock variables. (TODO add a check)
 
-Pono was awarded the Oski Award under its original name _cosa2_ at [HWMCC'19](http://fmv.jku.at/hwmcc19/) for solving the largest number of benchmarks overall.
+The input file must encode only the discrete transitions; delay transitions are added by Pono.
+An example is `samples/rtc/simple_ta.vmt`.
 
-## Setup
+Clocks variables can be declared either as Real or Int, but all clocks must be of the same type.
+The semantics considered by Pono is the following: each atomic step is a combination of a discrete transition, followed by an arbitrary delay.
+(A dummy edge is added at initial locations to allow starting the run with a delay).
 
-* [optional] Install bison and flex
-  * If you don't have bison and flex installed globally, run `./contrib/setup-bison.sh` and `./contrib/setup-flex.sh`
-  * Even if you do have bison, you might get errors about not being able to load `-ly`. In such a case, run the bison setup script.
-* Run `./contrib/setup-smt-switch.sh` -- it will build smt-switch with boolector
-  * [optional] to build with MathSAT (required for interpolant-based model checking) you need to obtain the libraries yourself
-    * note that MathSAT is under a custom non-BSD compliant license and you must assume all responsibility for meeting the conditions
-    * download the solver from https://mathsat.fbk.eu/download.html, unpack it and rename the directory to `./deps/mathsat`
-    * then add the `--with-msat` flag to the `setup-smt-switch.sh` command.
-* Run `./contrib/setup-btor2tools.sh`.
-* Run `./configure.sh`.
-  * if building with mathsat, also include `--with-msat` as an option to `configure.sh`
-* Run `cd build`.
-* Run `make`.
+The timed automaton semantics is built from the given input `.vmt` file when option `-ta` is given.
+One needs to use an SMT solver supporting linear theory of reals e.g. cvc5.
+For instance,
 
-### Dependencies
+    pono -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta.vmt
+    pono -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta_2.vmt
+    pono -e ind --smt-solver cvc5 -ta -p 1 --witness samples/rtc/simple_ta_2.vmt
 
-* Please see the [README of smt-switch](https://github.com/stanford-centaur/smt-switch#dependencies) for required dependencies.
-* Note to Arch Linux users: building Pono will fail if the static library of [GMP](https://gmplib.org/), which is required by [cvc5](https://github.com/cvc5/cvc5/blob/main/INSTALL.rst), is not installed on your system. You can fix it by installing `libgmp-static` from [AUR](https://aur.archlinux.org/packages/libgmp-static).
+Here the option `-p 1` is used to specify that property of index 1 is to be checked (the default is 0).
+The properties are numbered from 0 in the order of their appearances in the .vmt file.
 
-### Profiling
+The file `simple_ta_2_int.vmt` is identical to `simple_ta_2.vmt` with the exception that the clocks are integers:
 
-We link against the [gperftools library](https://github.com/gperftools/gperftools)
-to generate profiling data. To enable profiling, run `./configure.sh`
-with flag `--with-profiling` and recompile Pono by running `make` in
-the `build` directory. This assumes that you have installed the
-gperftools library before, e.g., on Ubuntu, run `sudo apt-get install
-google-perftools libgoogle-perftools-dev`.
+    pono -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta_2_int.vmt
 
-To profile, run `./pono --profiling-log=<log-file> ...` where
-`<log-file>` is the path to a file where profiling data is
-written. After normal or abnormal (e.g. via sending a signal)
-termination of Pono, the collected profile data can be analyzed by
-running, e.g., `google-pprof --text ./pono <log-file>` to produce a
-textual profile. See `man google-pprof` for further options.
+Here, Pono produces an integer-valued counterexample trace, as expected.
 
-In general, see
-[https://github.com/gperftools/gperftools/tree/master/docs](https://github.com/gperftools/gperftools/tree/master/docs)
-for further information about gperftools.
+The second property holds with integer delays (because any counterexample requires a delay of < 1):
 
-gperftools is licensed under a BSD 3-clause license, see
-[https://github.com/gperftools/gperftools/blob/master/COPYING](https://github.com/gperftools/gperftools/blob/master/COPYING).
+    pono -e ind --smt-solver cvc5 -ta --witness -p 1 samples/rtc/simple_ta_2_int.vmt
 
-## Existing code
+There is also support for a semantics with unit delays, where each atomic step is a discrete transition followed by a delay of exactly 1.
+This is activated with option `-ta-unit`. For instance,
 
-### Transition Systems
-There are two Transition System interfaces:
-* FunctionalTransitionSystem in fts.*
-* TransitionSystem in rts.*
+    pono -e ind --smt-solver cvc5 -ta-unit --witness samples/rtc/simple_ta_2_int.vmt
 
+Here, no counterexample is found since it is not possible to violate the property by taking discrete transitions with unit delays.
+Note that unit-delay semantics is slower to analyze in general because it generates a great number of disctinct intermediate states.
 
-### Smt-Switch
-[Smt-switch](https://github.com/stanford-centaur/smt-switch) is a C++ solver-agnostic API for SMT solvers. The main thing to remember is that everything is a pointer. Objects might be "typedef-ed" with `using` statements, but they're still `shared_ptr`s. Thus, when using a solver or a term, you need to use `->` accesses.
+## Checking RT-Consistency
+RT-Consistency check is relevant both for Boolean systems and timed automata.
+Three engines can be used to check rt-consistency: bmc, ind, and ic3ia.
 
-For more information, see the example usage in the [smt-switch tests](https://github.com/makaimann/smt-switch/tree/master/tests/btor).
-Other useful files to visit include:
-* `smt-switch/include/solver.h`: this is the main interface you will be using
-* `smt-switch/include/ops.h`: this contains all the ops you might need
-  * Note: create indexed ops like `Op(Extract, 7, 4)`
+BMC or k-induction can be used out of the box using a solver supporting quantifiers (such as CVC5).
+Specifying the `--rt-consistency` option will rewrite the property `P` given in the input file as 
 
-## Python bindings
-To build the `pono` python bindings, first make sure that you have [Cython](https://cython.org/) version >= 0.29 installed. Then ensure that `smt-switch` and its python bindings are installed. Finally, you can configure with `./configure.sh --python` and then build normally. The sequence of commands would be as follows:
-```
-# Optional recommended step: start a python virtualenv
-# If you install in the virtualenv, you will need to activate it each time before using pono
-# and deactivate the virtualenv with: deactivate
-python3 -m venv env
-source ./env/bin/activate
-pip install Cython==0.29 pytest
-./contrib/setup-smt-switch.sh --python
-./contrib/setup-btor2tools.sh
-pip install -e ./deps/smt-switch/build/python
-./configure.sh --python
-cd build
-make -j4
-pip install -e ./python
-cd ../
-# Test the bindings
-pytest ./tests
-```
+    Qprop = ~(P(X) /\ ∀ Y. ∀I. T(X, I, Y) -> ~P(Y))
 
-## Generating BTOR2 from Verilog
+There are two rt-consistency algorithms: the static (0) one eliminates quantifiers from the above formula,
+and applies any standard algorithm; the dynamic (1) one keeps the quantified formula.
 
-The best tool for creating BTOR2 from Verilog is [Yosys](https://github.com/YosysHQ/yosys). Yosys has an excellent manual [here](http://www.clifford.at/yosys/files/yosys_manual.pdf). 
-You can also run yosys interactively by running yosys with no arguments. Then you can view help messages for each command with: `help <command>`. Running `help` with no arguments lists all commands.
+The BMC and k-induction algorithms can be run to check rt-consistency with the dynamic algorithm as follows.
 
-A particularly useful command if you're having trouble is `show`, which can show the current state of the circuit in Yosys.
+    pono -e bmc --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono -e ind --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono -e ind --smt-solver cvc5 --rt-consistency 1 --witness samples/rtc/sample_inconsistent.smv
 
-### Yosys Quick Start
+Use --rt-consistency 0 for the static algorithm.
+Note that the k-induction engine does not scale to larger models (because it creates k copies of Qprop to check k-inductiveness, which becomes hard to solve).
 
-Below is an example file with comments explaining each command that produces a BTOR2 file for [./samples/counter-false.v](./samples/counter-false.v). This should be enough for most use cases.
+The tool answers `unsat` if there is no inconsistency (~Qprop is not reachable),
+`sat` if it finds a counterexample, and `unknown` otherwise.
+Note that the BMC answers Unknown above since it can only detect counterexamples.
 
-Once you have `yosys` installed, copy the text below into `gen-btor.ys` in the top-level of this repository. Then, running `yosys -s gen-btor.ys` will produce the BTOR2 file.
+The ic3ia engine can be used to check rt-consistency statically provided that an smt-solver with quantifier elimination is provided.
+The default interpolator is msat (see below to use open-source interpolators)
 
-```
-# read in the file(s) -- there can be multiple
-# whitespace separated files, and you can
-# escape new lines if necessary
-read -formal ./samples/counter-false.v;
+    pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 samples/rtc/sample_consistent.smv
+    pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 --witness samples/rtc/sample_inconsistent.smv
 
-# prep does a conservative elaboration
-# of the top module provided
-prep -top counter;
+(Witness generation to ic3ia was added in this fork).
+Here, the witness is a path to a state whose all successors violate the given property.
 
-# this command just does a sanity check
-# of the hierarchy
-hierarchy -check;
+A variant of the ic3ia algorithm is implemented as well to check rt-consistency dynamically. Again the interpolator by default is msat.
+The ic3ia algorithm and its refinement were modified to work with quantified properties:
 
-# If an assumption is flopped, you might
-# see strange behavior at the last state
-# (because the clock hasn't toggled)
-# this command ensures that assumptions
-# hold at every state
-chformal -assume -early;
+    pono -e ic3ia --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono -e ic3ia --smt-solver cvc5 --rt-consistency 1 --witness samples/rtc/sample_inconsistent.smv
 
-# this processes memories
-# nomap means it will keep them as arrays
-memory -nomap;
+RT-consistency of timed automata, using both algorithms:
+    pono -e ic3ia --smt-solver cvc5 -ta --rt-consistency 1 samples/rtc/simple_ta.vmt
+    pono -e ic3ia --smt-solver cvc5 -ta --rt-consistency 0 samples/rtc/simple_ta.vmt
 
-# flatten the design hierarchy
-flatten;
+## Deadlocks as RT-Inconsistencies
+A side-effect of the rt-consistency check is that any deadlock (that is, a reachable state with no outgoing transition) is considered an rt-inconsistency since such a state (valuation over X) satisfies `∀ Y. ∀I. T(X, I, Y) -> ~P(Y)`. So one must be careful to avoid deadlocks in the model or make sure they are intended.
 
-# (optional) uncomment and set values to simulate reset signal
-# use -resetn for an active low pin
-# -n configures the number of cycles to simulate
-# -rstlen configures how long the reset is active (recommended to keep it active for the whole simulation)
-# -w tells it to write back the final state of the simulation as the initial state in the btor2 file
-# another useful option is -zinit which zero initializes any uninitialized state
-# sim -clock <clockpin> -reset <resetpin> -n <number of cycles> -rstlen <number of cycles> -w <top_module>
+## IC3IA with external interpolators
+If MathSAT is not available, there is support for the following interpolators which are free software: opensmt, smtinterpoal.
+These can be installed by using the scripts `contrib/setup_opensmt.sh` and `contrib/setup_smtinterpol.sh` which will download the executables, and the folders containing them to the path (to `~/.bashrc`).
 
-# (optional) use an "explicit" clock
-# e.g. every state is a half cycle of the
-# fastest clock
-# use this option if you see errors that
-# refer to "adff" or asynchronous components
-# IMPORTANT NOTE: the clocks are not
-# automatically toggled if you use this option
-# clk2fflogic;
+    pono -e ic3ia --smt-solver cvc5 -ta --external-interpolator opensmt samples/rtc/simple_ta.vmt
+    pono -e ic3ia --smt-solver cvc5 -ta --external-interpolator smtinterpol samples/rtc/simple_ta.vmt
 
-# This turns all undriven signals into
-# inputs
-setundef -undriven -expose;
+The support is rather fragile due to the incomplete smtlib parser of Pono and inconsistencies between the use of this format among different solvers. For instance, Pono cannot parse real numbers (such as 1.0) in the smt files; these must be given as (to_real 1). There is a workaround but it will fail for a number such as 1.2.
 
-# This writes to a file in BTOR2 format
-write_btor counter-false.btor2
-```
+## Installation
+Installation instructions follow those in the main [README-pono](README-pono) with a few more details.
+
+The following packages are required for the compilation to succeed on Ubuntu 22.04:
+- flex, bison
+- libbison-dev
+- libgmp-dev
+- build-essential python3-dev
+- pip3 install toml scikit-learn
+
+Install first custom smt solvers and the smt-switch interface. 
+
+    cd contrib
+    ./setup-smtinterpol.sh
+    ./setup-opensmt.sh
+    ./contrib/setup-btor2tools.sh
+
+If you have MathSAT version 5.6.4, extract it to `deps/mathsat`, and run
+
+    ./setup-smt-switch.sh --with-msat
+
+To compile without MathSAT, just run
+
+    ./setup-smt-switch.sh
+    
+Then
+
+    cd ..
+    ./configure.sh
+
+If building with mathsat, also include `--with-msat` as an option to `configure.sh`.
+
+    cd build
+    make 
+
+## Testing
+To compile the tests uncomment the following lines in CMakeLists.txt
+
+    enable_testing()
+    add_subdirectory(tests)
+
+Then `./build/tests/test_ta` tests timed automata semantics.
+
+The following cram test file contains all examples in this readme:
+
+    tests/cram/ta.t
