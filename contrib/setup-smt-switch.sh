@@ -59,7 +59,7 @@ mkdir -p $DEPS
 
 if [ ! -d "$DEPS/smt-switch" ]; then
     cd $DEPS
-    git clone https://gitlab.inria.fr/osankur/smt-switch/
+    git clone -b quantif_elim https://github.com/osankur/smt-switch/
     #git clone https://github.com/makaimann/smt-switch
     cd smt-switch
     #git checkout -f $SMT_SWITCH_VERSION
