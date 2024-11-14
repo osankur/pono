@@ -118,8 +118,14 @@ The following packages are required for the compilation to succeed on Ubuntu 22.
 - flex, bison
 - libbison-dev
 - libgmp-dev
-- build-essential python3-dev
+- build-essential
+- Java >= 1.8 (e.g. the Ubuntu package openjdk-18-jdk)
+
+And for Python bindings:
+- cythons3 python3-dev
 - pip3 install toml scikit-learn
+
+Please use g++-11; compilation fails with clang due to some warnings being counted as errors.
 
 Install first custom smt solvers and the smt-switch interface. 
 
