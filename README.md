@@ -126,7 +126,7 @@ Install first custom smt solvers and the smt-switch interface.
     cd contrib
     ./setup-smtinterpol.sh
     ./setup-opensmt.sh
-    ./contrib/setup-btor2tools.sh
+    ./setup-btor2tools.sh
 
 If you have MathSAT version 5.6.4, extract it to `deps/mathsat`, and run
 
