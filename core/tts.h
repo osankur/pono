@@ -16,12 +16,13 @@ enum class TimedAutomatonDelays
 
 
 /**
- * if Strict, all delays are > 0; otherwise >=0.
+ * if Strict, all delays are > 0; if Weak >=0, if GeqOne, then >= 1
 */
 enum class TADelayStrictness
 {
     Strict,
-    Weak
+    Weak,
+    GeqOne
 };
 
 std::string to_string(TADelayStrictness strictness);

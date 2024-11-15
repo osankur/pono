@@ -1,7 +1,7 @@
 # Pono Real-Time
 This fork of Pono contains a `real-time' extension of Pono:
 - A .vmt front-end for timed automata
-- Algorithms to check real-time-consistency (rt-consistenct) which means checking whether a state satisfying `prop /\ (AX not prop)` is reachable.
+- Algorithms to check real-time-consistency (rt-consistency) which means checking whether a state satisfying `prop /\ (AX not prop)` is reachable.
 (The system is rt-consistent if no such state is reachable).
 
 Currently, this is supported either by eliminating quantifiers and then using any engine, or keeping the property quantified within engines BMC, IND, and IC3IA via a small variant supporting quantified properties and custom interpolators.

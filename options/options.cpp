@@ -619,14 +619,14 @@ const option::Descriptor usage[] = {
     "",
     "strict-delays",
     Arg::Numeric,
-    "  --strict-delays \ttimed automata semantics with strictly positive delays (default: true)"
+    "  --strict-delays \ttimed automata semantics with strictly positive delays (0), positive or zero delays (1), delays greater or equal to one (2) (default: 0)"
     },
   { TIMED_AUTOMATON_DELAY_FIRST,
     0,
     "",
     "delay-first",
     Arg::Numeric,
-    "  --delay-first \ttimed automata semantics with strictly positive delays (default: true)"
+    "  --delay-first \ttimed automata semantics where an atomic transition is a delay+discrete transition; if false then an atomic transition is a discrete transition + delay (default: true)"
     },
       
   { EXTERNAL_INTERPOLATOR,
@@ -849,8 +849,12 @@ ProverResult PonoOptions::parse_and_set_options(int argc,
             case 0: 
               timed_automaton_delay_strictness_ = TADelayStrictness::Weak;
               break;
-            default:
+            case 1:
               timed_automaton_delay_strictness_ = TADelayStrictness::Strict;
+              break;
+            case 2:
+              timed_automaton_delay_strictness_ = TADelayStrictness::GeqOne;
+              break;
           }
           break;
         case TIMED_AUTOMATON_DELAY_FIRST: 

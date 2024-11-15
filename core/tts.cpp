@@ -11,6 +11,7 @@ std::string to_string(TADelayStrictness strictness){
     switch(strictness) {
         case TADelayStrictness::Strict : return "Strict";
         case TADelayStrictness::Weak : return "Weak";
+        case TADelayStrictness::GeqOne : return "GeqOne";
     }
     return "Unknown";
 }
@@ -60,7 +61,7 @@ void TimedTransitionSystem::encode_compact_delays(){
   delta_ = TransitionSystem::make_inputvar(DELAY_VAR_NAME, this->delay_sort_);
   logger.log(1, "Sort of timed automata clocks: {}", this->delay_sort_);
   logger.log(1, "Unit delays: {}", this->getDelayType() == TimedAutomatonDelays::UnitDurations);
-  logger.log(1, "Delays are strict: {}", this->delay_strictness_ == TADelayStrictness::Strict);
+  logger.log(1, "Delays are strict/weak/geqOne: {}", to_string(TADelayStrictness::Strict));
   logger.log(1, "Delay-First: {}", this->delay_edge_order_ == TADelayEdgeOrder::DelayFirst);
   logger.log(2, "Listing timed automata clocks:");
   for (auto c : clock_vars_){
@@ -127,7 +128,10 @@ void TimedTransitionSystem::encode_compact_delays(){
   if (this->delay_type_ == TimedAutomatonDelays::ArbitraryDurations){
     if (this->delay_strictness_ == TADelayStrictness::Weak)
       delta_nonnegative = solver_->make_term(Le, zero, delta_);
-    else delta_nonnegative = solver_->make_term(Lt, zero, delta_);
+    else if(this->delay_strictness_ == TADelayStrictness::Strict)
+      delta_nonnegative = solver_->make_term(Lt, zero, delta_);
+    else 
+      delta_nonnegative = solver_->make_term(Le, one, delta_);
   } else {
     delta_nonnegative = solver_->make_term(Equal, one, delta_);
   }  
