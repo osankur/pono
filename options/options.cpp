@@ -619,7 +619,7 @@ const option::Descriptor usage[] = {
     "",
     "strict-delays",
     Arg::Numeric,
-    "  --strict-delays \ttimed automata semantics with strictly positive delays (0), positive or zero delays (1), delays greater or equal to one (2) (default: 0)"
+    "  --strict-delays \ttimed automata semantics with positive or zero delays (0), positive delays (1), delays greater or equal to one (2) (default: 1)"
     },
   { TIMED_AUTOMATON_DELAY_FIRST,
     0,
