@@ -30,27 +30,27 @@ The timed automaton semantics is built from the given input `.vmt` file when opt
 One needs to use an SMT solver supporting linear theory of reals e.g. cvc5.
 For instance,
 
-    pono -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta.vmt
-    pono -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta_2.vmt
-    pono -e ind --smt-solver cvc5 -ta -p 1 --witness samples/rtc/simple_ta_2.vmt
+    pono-rt -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta.vmt
+    pono-rt -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta_2.vmt
+    pono-rt -e ind --smt-solver cvc5 -ta -p 1 --witness samples/rtc/simple_ta_2.vmt
 
 Here the option `-p 1` is used to specify that property of index 1 is to be checked (the default is 0).
 The properties are numbered from 0 in the order of their appearances in the .vmt file.
 
 The file `simple_ta_2_int.vmt` is identical to `simple_ta_2.vmt` with the exception that the clocks are integers:
 
-    pono -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta_2_int.vmt
+    pono-rt -e ind --smt-solver cvc5 -ta --witness samples/rtc/simple_ta_2_int.vmt
 
 Here, Pono produces an integer-valued counterexample trace, as expected.
 
 The second property holds with integer delays (because any counterexample requires a delay of < 1):
 
-    pono -e ind --smt-solver cvc5 -ta --witness -p 1 samples/rtc/simple_ta_2_int.vmt
+    pono-rt -e ind --smt-solver cvc5 -ta --witness -p 1 samples/rtc/simple_ta_2_int.vmt
 
 There is also support for a semantics with unit delays, where each atomic step is a discrete transition followed by a delay of exactly 1.
 This is activated with option `-ta-unit`. For instance,
 
-    pono -e ind --smt-solver cvc5 -ta-unit --witness samples/rtc/simple_ta_2_int.vmt
+    pono-rt -e ind --smt-solver cvc5 -ta-unit --witness samples/rtc/simple_ta_2_int.vmt
 
 Here, no counterexample is found since it is not possible to violate the property by taking discrete transitions with unit delays.
 Note that unit-delay semantics is slower to analyze in general because it generates a great number of disctinct intermediate states.
@@ -69,9 +69,9 @@ and applies any standard algorithm; the dynamic (1) one keeps the quantified for
 
 The BMC and k-induction algorithms can be run to check rt-consistency with the dynamic algorithm as follows.
 
-    pono -e bmc --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
-    pono -e ind --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
-    pono -e ind --smt-solver cvc5 --rt-consistency 1 --witness samples/rtc/sample_inconsistent.smv
+    pono-rt -e bmc --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono-rt -e ind --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono-rt -e ind --smt-solver cvc5 --rt-consistency 1 --witness samples/rtc/sample_inconsistent.smv
 
 Use --rt-consistency 0 for the static algorithm.
 Note that the k-induction engine does not scale to larger models (because it creates k copies of Qprop to check k-inductiveness, which becomes hard to solve).
@@ -83,8 +83,8 @@ Note that the BMC answers Unknown above since it can only detect counterexamples
 The ic3ia engine can be used to check rt-consistency statically provided that an smt-solver with quantifier elimination is provided.
 The default interpolator is msat (see below to use open-source interpolators)
 
-    pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 samples/rtc/sample_consistent.smv
-    pono -e ic3ia --smt-solver cvc5 --rt-consistency 0 --witness samples/rtc/sample_inconsistent.smv
+    pono-rt -e ic3ia --smt-solver cvc5 --rt-consistency 0 samples/rtc/sample_consistent.smv
+    pono-rt -e ic3ia --smt-solver cvc5 --rt-consistency 0 --witness samples/rtc/sample_inconsistent.smv
 
 (Witness generation to ic3ia was added in this fork).
 Here, the witness is a path to a state whose all successors violate the given property.
@@ -92,12 +92,12 @@ Here, the witness is a path to a state whose all successors violate the given pr
 A variant of the ic3ia algorithm is implemented as well to check rt-consistency dynamically. Again the interpolator by default is msat.
 The ic3ia algorithm and its refinement were modified to work with quantified properties:
 
-    pono -e ic3ia --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
-    pono -e ic3ia --smt-solver cvc5 --rt-consistency 1 --witness samples/rtc/sample_inconsistent.smv
+    pono-rt -e ic3ia --smt-solver cvc5 --rt-consistency 1 samples/rtc/sample_consistent.smv
+    pono-rt -e ic3ia --smt-solver cvc5 --rt-consistency 1 --witness samples/rtc/sample_inconsistent.smv
 
 RT-consistency of timed automata, using both algorithms:
-    pono -e ic3ia --smt-solver cvc5 -ta --rt-consistency 1 samples/rtc/simple_ta.vmt
-    pono -e ic3ia --smt-solver cvc5 -ta --rt-consistency 0 samples/rtc/simple_ta.vmt
+    pono-rt -e ic3ia --smt-solver cvc5 -ta --rt-consistency 1 samples/rtc/simple_ta.vmt
+    pono-rt -e ic3ia --smt-solver cvc5 -ta --rt-consistency 0 samples/rtc/simple_ta.vmt
 
 ## Deadlocks as RT-Inconsistencies
 A side-effect of the rt-consistency check is that any deadlock (that is, a reachable state with no outgoing transition) is considered an rt-inconsistency since such a state (valuation over X) satisfies `∀ Y. ∀I. T(X, I, Y) -> ~P(Y)`. So one must be careful to avoid deadlocks in the model or make sure they are intended.
@@ -106,8 +106,8 @@ A side-effect of the rt-consistency check is that any deadlock (that is, a reach
 If MathSAT is not available, there is support for the following interpolators which are free software: opensmt, smtinterpoal.
 These can be installed by using the scripts `contrib/setup_opensmt.sh` and `contrib/setup_smtinterpol.sh` which will download the executables, and the folders containing them to the path (to `~/.bashrc`).
 
-    pono -e ic3ia --smt-solver cvc5 -ta --external-interpolator opensmt samples/rtc/simple_ta.vmt
-    pono -e ic3ia --smt-solver cvc5 -ta --external-interpolator smtinterpol samples/rtc/simple_ta.vmt
+    pono-rt -e ic3ia --smt-solver cvc5 -ta --external-interpolator opensmt samples/rtc/simple_ta.vmt
+    pono-rt -e ic3ia --smt-solver cvc5 -ta --external-interpolator smtinterpol samples/rtc/simple_ta.vmt
 
 The support is rather fragile due to the incomplete smtlib parser of Pono and inconsistencies between the use of this format among different solvers. For instance, Pono cannot parse real numbers (such as 1.0) in the smt files; these must be given as (to_real 1). There is a workaround but it will fail for a number such as 1.2.
 
